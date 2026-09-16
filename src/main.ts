@@ -4,7 +4,7 @@ import { parsePaste, sampleDashboardPaste } from "./parsePaste";
 import { parseUsageEventsCsv } from "./parseUsageCsv";
 import { clearState, loadState, saveState } from "./storage";
 import type { StoredState } from "./types";
-import { fromDatetimeLocalValue, renderApp, toDatetimeLocalValue } from "./ui";
+import { fromDatetimeLocalValue, renderApp, toDatetimeLocalValue, type LastImport } from "./ui";
 
 let state: StoredState = loadState();
 let paste = "";
@@ -12,6 +12,7 @@ let capturedAtLocal = toDatetimeLocalValue();
 let notice: string | undefined;
 let error: string | undefined;
 let busy: string | undefined;
+let lastImport: LastImport | undefined;
 
 function persist() {
   saveState(state);
@@ -33,41 +34,100 @@ function render() {
     notice,
     error,
     busy,
+    lastImport,
   });
   bind();
 }
 
-async function handleFiles(list: FileList | File[]) {
-  const files = [...list];
-  if (!files.length) return;
-  error = undefined;
-  notice = undefined;
-  busy = `Reading ${files.length} file${files.length === 1 ? "" : "s"} locally…`;
-  render();
-  try {
-    const result = await ingestFiles(files, capturedIso());
-    paste = result.extracted || paste;
-    if (result.readings.length) {
-      state.readings = [...state.readings, ...result.readings];
-      persist();
-    }
-    notice = [
-      result.readings.length
-        ? `Saved ${result.readings.length} reading${result.readings.length === 1 ? "" : "s"} from drop.`
-        : result.error
-          ? undefined
-          : "No tank fill from this drop.",
-      ...result.notes,
-    ]
-      .filter(Boolean)
-      .join(" ");
-    error = result.error;
-  } catch (err) {
-    error = err instanceof Error ? err.message : String(err);
-  } finally {
-    busy = undefined;
-    render();
+async function snapshotFiles(list: FileList | File[]): Promise<File[]> {
+  const raw = Array.from(list);
+  const copies: File[] = [];
+  for (const file of raw) {
+    const buf = await file.arrayBuffer();
+    copies.push(new File([buf], file.name, { type: file.type, lastModified: file.lastModified }));
   }
+  return copies;
+}
+
+function summarizeImport(files: File[], result: Awaited<ReturnType<typeof ingestFiles>>): LastImport {
+  const names = files.map((f) => f.name).join(", ");
+  const bytes = files.reduce((n, f) => n + f.size, 0);
+  const summary = [
+    result.readings.length
+      ? `Filled ${result.readings.length} tank reading${result.readings.length === 1 ? "" : "s"}.`
+      : "No tank figures in this file.",
+    ...result.notes,
+    result.error,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return { names, bytes, extracted: result.extracted, summary };
+}
+
+let ingestLock = false;
+
+async function handleFiles(list: FileList | File[]) {
+  if (ingestLock) return;
+  ingestLock = true;
+  let files: File[] = [];
+  try {
+    try {
+      files = await snapshotFiles(list);
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err);
+      lastImport = { names: "unreadable", bytes: 0, extracted: "", summary: error };
+      render();
+      return;
+    }
+    if (!files.length) {
+      error = "Choose files did not receive a file. Pick a screenshot, .txt, .json, or a finished .csv.";
+      lastImport = { names: "none", bytes: 0, extracted: "", summary: error };
+      render();
+      return;
+    }
+    error = undefined;
+    notice = undefined;
+    lastImport = {
+      names: files.map((f) => f.name).join(", "),
+      bytes: files.reduce((n, f) => n + f.size, 0),
+      extracted: "",
+      summary: "Reading locally…",
+    };
+    busy = `Reading ${files.map((f) => f.name).join(", ")}…`;
+    render();
+    try {
+      const result = await ingestFiles(files, capturedIso());
+      paste = result.extracted || paste;
+      if (result.readings.length) {
+        state.readings = [...state.readings, ...result.readings];
+        persist();
+      }
+      lastImport = summarizeImport(files, result);
+      notice = lastImport.summary;
+      error = result.error;
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err);
+      lastImport = {
+        names: files.map((f) => f.name).join(", "),
+        bytes: files.reduce((n, f) => n + f.size, 0),
+        extracted: "",
+        summary: error,
+      };
+    } finally {
+      busy = undefined;
+      render();
+    }
+  } finally {
+    ingestLock = false;
+  }
+}
+
+function onFilePicked(input: HTMLInputElement) {
+  const picked = input.files;
+  if (!picked?.length) return;
+  const snapshot = Array.from(picked);
+  input.value = "";
+  void handleFiles(snapshot);
 }
 
 function bind() {
@@ -104,9 +164,9 @@ function bind() {
     render();
   });
 
-  fileInput?.addEventListener("change", () => {
-    if (fileInput.files?.length) void handleFiles(fileInput.files);
-  });
+  fileInput?.addEventListener("change", () => onFilePicked(fileInput));
+  fileInput?.addEventListener("input", () => onFilePicked(fileInput));
+  document.getElementById("choose-files")?.addEventListener("click", () => fileInput?.click());
 
   drop?.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -166,6 +226,7 @@ function bind() {
     state = clearState();
     paste = "";
     capturedAtLocal = toDatetimeLocalValue();
+    lastImport = undefined;
     notice = "Local data cleared.";
     error = undefined;
     render();
@@ -189,7 +250,13 @@ async function loadBundledCsv() {
     state.readings = readings;
     persist();
     paste = text;
-    notice = `Loaded ${readings.length} daily cumulative readings from the bundled Sep 2026 usage-events CSV. grok-bot-* mix is tank 1 (not Cursor Models). Cloud-agent Claude is Other Models. On-Demand Kind is tank 4. Bot/Cursor Models stay spend-only; Other Models / on-demand % use plan/cap.`;
+    lastImport = {
+      names: "usage-events-2026-09-16.csv",
+      bytes: new TextEncoder().encode(text).length,
+      extracted: text.slice(0, 4000),
+      summary: `Loaded ${readings.length} daily cumulative readings from the bundled Sep 2026 usage-events CSV.`,
+    };
+    notice = lastImport.summary;
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
   } finally {

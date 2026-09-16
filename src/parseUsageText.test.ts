@@ -105,3 +105,19 @@ describe("unfinished Chrome download", () => {
     expect(result.readings).toHaveLength(0);
   });
 });
+
+describe("file ingest output", () => {
+  it("fills tanks from a chosen Settings-usage text file", async () => {
+    const file = new File(
+      [
+        `Weekly usage 72%\nResets in 2 days\nOn-demand usage\nBilled through Cursor\n$0.00\nOn-demand monthly limit $20\n`,
+      ],
+      "grok-bot-settings-usage.txt",
+      { type: "text/plain" },
+    );
+    const result = await ingestFile(file, CAPTURE);
+    expect(result.error).toBeUndefined();
+    expect(result.readings[0]?.tanks.grokBotWeekly?.percentUsed).toBe(72);
+    expect(result.extracted).toMatch(/Weekly usage 72%/);
+  });
+});

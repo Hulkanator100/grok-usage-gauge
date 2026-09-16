@@ -217,6 +217,32 @@ button.danger { background: #6b2a22; color: #ffd8d1; }
   background: #2a331c;
 }
 .drop-zone p { color: var(--muted); font-size: 0.85rem; margin: 0.35rem 0 0.6rem; }
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.drop-zone { position: relative; }
+.chosen { font-weight: 650; color: var(--ink) !important; }
+.ingest-output {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  background: #151910;
+}
+.ingest-output h3 { margin: 0 0 0.4rem; font-size: 0.95rem; }
+.ingest-output pre.extract {
+  max-height: 12rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.78rem;
+  background: #0c0e0a;
+  padding: 0.6rem;
+  border-radius: 8px;
+}
 .thumb { max-height: 48px; vertical-align: middle; border-radius: 4px; margin-left: 0.4rem; }
 .notes { font-size: 0.8rem; margin-top: 0.2rem; }
 .surface-grid {

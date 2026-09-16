@@ -139,6 +139,13 @@ export function renderTankCard(tank: TankId, m: TankMetrics): string {
   `;
 }
 
+export interface LastImport {
+  names: string;
+  bytes: number;
+  extracted: string;
+  summary: string;
+}
+
 export function renderApp(args: {
   readings: Reading[];
   settings: AppSettings;
@@ -147,6 +154,7 @@ export function renderApp(args: {
   notice?: string;
   error?: string;
   busy?: string;
+  lastImport?: LastImport;
 }): string {
   const now = new Date();
   const cards = TANK_IDS.map((id) => renderTankCard(id, metricsForTank(args.readings, id, args.settings, now))).join(
@@ -186,12 +194,28 @@ export function renderApp(args: {
         <label>Captured at
           <input id="captured-at" type="datetime-local" value="${args.capturedAtLocal}" />
         </label>
-        <div id="drop-zone" class="drop-zone" tabindex="0">
+        <div id="drop-zone" class="drop-zone">
           <strong>Drop screenshots or usage files</strong>
-          <p>png / jpg / webp, copied <code>/usage</code> text, Settings → Usage, Spending, or a finished usage-events <code>.csv</code> (accepts <code>.csv,.crdownload</code>). Paste CSV in the box too. Empty Chrome <code>.crdownload</code> files are rejected. Paste an image with Ctrl+V.</p>
-          <input id="file-input" type="file" accept=".csv,.crdownload,text/csv,image/*,.txt,.md,.json,.log" multiple />
+          <p>png / jpg / webp, copied <code>/usage</code> text, Settings → Usage, Spending, or a finished usage-events <code>.csv</code>. Empty Chrome <code>.crdownload</code> files are rejected. Paste an image with Ctrl+V.</p>
+          <input id="file-input" type="file" accept=".csv,.crdownload,text/csv,image/*,.txt,.md,.json,.log,text/plain" multiple />
+          <button type="button" id="choose-files">Read chosen files</button>
+          <p class="chosen">${args.lastImport ? escapeHtml(args.lastImport.names) : "No file chosen yet"}</p>
         </div>
         ${args.busy ? `<p class="notice" role="status">${escapeHtml(args.busy)}</p>` : ""}
+        ${
+          args.lastImport
+            ? `<div id="ingest-output" class="ingest-output" role="status">
+          <h3>Last file output</h3>
+          <p><strong>${escapeHtml(args.lastImport.names)}</strong> · ${args.lastImport.bytes.toLocaleString()} bytes</p>
+          <p>${escapeHtml(args.lastImport.summary)}</p>
+          ${
+            args.lastImport.extracted
+              ? `<pre class="extract">${escapeHtml(args.lastImport.extracted.slice(0, 4000))}</pre>`
+              : `<p class="muted">No text extracted from this file.</p>`
+          }
+        </div>`
+            : ""
+        }
         <label>Paste (JSON, dashboard text, CLI /usage, or OCR text)
           <textarea id="paste" rows="14" placeholder="Drop a screenshot or paste Weekly usage 61%…">${escapeHtml(args.paste)}</textarea>
         </label>
