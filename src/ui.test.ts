@@ -71,7 +71,11 @@ describe("local controls sliders", () => {
       paste: "",
       capturedAtLocal: "2026-09-16T18:00",
     });
-    expect(html).toContain("controls-panel");
+    expect(html).toContain("sample-io");
+    expect(html).toContain("Inputs · write the tanks");
+    expect(html).toContain("Outputs · copy or wipe this browser");
+    expect(html).toContain("io-k");
+    expect(html).toContain("Load example week");
     expect(html).toContain("Cursor month");
     expect(html).toContain("X Grok · 2-hour windows");
     expect(html).toContain('id="ondemand-cap" type="range"');

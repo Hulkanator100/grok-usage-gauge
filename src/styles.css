@@ -306,6 +306,51 @@ a { color: var(--amber); }
   color: var(--ink);
 }
 .control-block .row { margin-top: 0.55rem; }
+.io-heading {
+  margin: 0.85rem 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--amber);
+}
+.io-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.io-list li {
+  display: grid;
+  grid-template-columns: minmax(10.5rem, 0.4fr) 1fr;
+  gap: 0.5rem 0.75rem;
+  align-items: start;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  background: var(--surface);
+}
+.io-list button { width: 100%; text-align: center; }
+.io-action { min-width: 0; }
+.io-list p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--dim);
+  line-height: 1.4;
+}
+.io-k {
+  display: inline-block;
+  margin-right: 0.2rem;
+  color: var(--amber);
+  font-size: 0.68rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+@media (max-width: 640px) {
+  .io-list li { grid-template-columns: 1fr; }
+}
 .select-field {
   display: grid;
   gap: 0.3rem;

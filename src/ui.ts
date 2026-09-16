@@ -559,20 +559,44 @@ export function renderApp(args: {
         <h2>Local controls</h2>
         <p class="control-status">${n} stored reading${n === 1 ? "" : "s"}. Empty-at needs 2. Acceleration needs 3. Unpublished estimate needs spend+% or used/cap.</p>
 
-        <div class="control-block">
+        <div class="control-block sample-io">
           <h3>Sample data</h3>
-          <p class="slide-hint">Load canned readings, or keep a private JSON copy on this PC.</p>
-          <div class="row">
-            <button type="button" id="load-example">Load example week</button>
-            <button type="button" id="load-accel">Load accelerating week</button>
-            <button type="button" id="load-sample-csv">Load bundled usage-events CSV</button>
-          </div>
-          <div class="row">
-            <button type="button" id="export-json" class="ghost">Download history JSON</button>
-            <button type="button" id="restore-json" class="ghost">Restore history JSON</button>
-            <input id="restore-json-input" type="file" accept="application/json,.json" hidden />
-            <button type="button" id="clear-data" class="danger">Clear local data</button>
-          </div>
+          <p class="slide-hint">Nothing here talks to Cursor or X. Buttons either <strong>replace</strong> the readings in this browser or <strong>copy / wipe</strong> that local store.</p>
+
+          <h4 class="io-heading">Inputs · write the tanks</h4>
+          <ul class="io-list">
+            <li>
+              <button type="button" id="load-example">Load example week</button>
+              <p><span class="io-k">In</span> bundled 2-reading demo (no file). <span class="io-k">Out</span> replaces stored history with 4 Cursor tanks + 3 X windows, on-pace Bot week.</p>
+            </li>
+            <li>
+              <button type="button" id="load-accel">Load accelerating week</button>
+              <p><span class="io-k">In</span> bundled 3-reading demo (no file). <span class="io-k">Out</span> replaces history; Grok Bot should warn it will empty before weekly reset.</p>
+            </li>
+            <li>
+              <button type="button" id="load-sample-csv">Load bundled usage-events CSV</button>
+              <p><span class="io-k">In</span> shipped Cursor usage-events CSV. <span class="io-k">Out</span> daily Cursor spend readings appended from that file (not X windows).</p>
+            </li>
+          </ul>
+
+          <h4 class="io-heading">Outputs · copy or wipe this browser</h4>
+          <ul class="io-list">
+            <li>
+              <button type="button" id="export-json" class="ghost">Download history JSON</button>
+              <p><span class="io-k">In</span> readings + settings in localStorage. <span class="io-k">Out</span> a private <code>.json</code> file on this PC (not uploaded).</p>
+            </li>
+            <li>
+              <div class="io-action">
+                <button type="button" id="restore-json" class="ghost">Restore history JSON</button>
+                <input id="restore-json-input" type="file" accept="application/json,.json" hidden />
+              </div>
+              <p><span class="io-k">In</span> a previously downloaded gauge JSON. <span class="io-k">Out</span> replaces this browser’s stored readings and settings.</p>
+            </li>
+            <li>
+              <button type="button" id="clear-data" class="danger">Clear local data</button>
+              <p><span class="io-k">In</span> confirm dialog. <span class="io-k">Out</span> empty tanks, default sliders, paste box cleared. The JSON file on disk is untouched.</p>
+            </li>
+          </ul>
         </div>
 
         <div class="control-block">
