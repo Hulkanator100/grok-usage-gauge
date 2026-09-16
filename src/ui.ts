@@ -3,6 +3,7 @@ import { computeTankMetrics, otherModelsCapUsd, type TankMetrics } from "./metri
 import type { AppSettings, LastImport, Reading, TankId } from "./types";
 import { TANK_IDS, TANK_META } from "./types";
 import { sortedReadings } from "./storage";
+import { historyPoints, polylineRemaining, timeWindow, type HistoryPoint } from "./chart";
 
 function fmtPct(n: number | undefined): string {
   if (n == null || Number.isNaN(n)) return "—";
@@ -131,7 +132,105 @@ function fuelTicks(): string {
   return ticks.join("");
 }
 
-export function renderTankCard(tank: TankId, m: TankMetrics): string {
+function fmtAxis(t: number): string {
+  return new Date(t).toLocaleString(undefined, { month: "short", day: "numeric" });
+}
+
+function renderSpark(points: HistoryPoint[]): string {
+  if (points.length < 2) {
+    return `<p class="spark-idle">History graph needs 2+ readings</p>`;
+  }
+  const w = 200;
+  const h = 52;
+  const d = polylineRemaining(points, w, h);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="Remaining fuel over time">
+    <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" class="spark-face"/>
+    <path d="${d}" class="spark-line" fill="none"/>
+  </svg>`;
+}
+
+function renderTankHistoryPanel(tank: TankId, points: HistoryPoint[]): string {
+  const meta = TANK_META[tank];
+  if (points.length < 2) {
+    return `<article class="instrument-card">
+      <h3>${meta.title}</h3>
+      <p class="spark-idle">Need 2+ timestamped readings for this tank.</p>
+    </article>`;
+  }
+  const w = 320;
+  const h = 140;
+  const d = polylineRemaining(points, w, h, 28, 16);
+  const first = points[0];
+  const last = points[points.length - 1];
+  return `<article class="instrument-card">
+    <h3>${meta.title}</h3>
+    <svg class="trace" viewBox="0 0 ${w} ${h}" role="img" aria-label="${meta.title} remaining over the captured period">
+      <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" class="spark-face"/>
+      <text class="axis-y" x="14" y="22">F</text>
+      <text class="axis-y" x="14" y="${h - 10}">E</text>
+      <path d="${d}" class="spark-line" fill="none"/>
+      <text class="axis-x" x="28" y="${h - 4}">${fmtAxis(first.t)}</text>
+      <text class="axis-x end" x="${w - 8}" y="${h - 4}">${fmtAxis(last.t)}</text>
+    </svg>
+    <p class="instrument-read">${fmtPct(first.remaining)} remaining → ${fmtPct(last.remaining)} remaining</p>
+  </article>`;
+}
+
+const TRACE_DASH: Record<TankId, string> = {
+  grokBotWeekly: "",
+  cursorModelsMonthly: "7 5",
+  otherModelsMonthly: "2.5 3.5",
+  onDemandMonthly: "12 4 2.5 4",
+};
+
+function renderOverlay(readings: Reading[], settings: AppSettings): string {
+  const series = TANK_IDS.map((id) => historyPoints(readings, id, settings));
+  const win = timeWindow(series);
+  const ready = series.filter((p) => p.length >= 2).length;
+  if (!win || ready === 0) {
+    return `<p class="spark-idle">Load two or more timestamped readings (example week works) to draw remaining fuel over the period.</p>`;
+  }
+  const w = 960;
+  const h = 220;
+  const traces = TANK_IDS.map((id, i) => {
+    const points = series[i];
+    if (points.length < 2) return "";
+    const d = polylineRemaining(points, w, h, 36, 22, win);
+    const dash = TRACE_DASH[id] ? ` stroke-dasharray="${TRACE_DASH[id]}"` : "";
+    return `<path d="${d}" class="spark-line overlay-line overlay-${i}" fill="none"${dash}/>`;
+  }).join("");
+  const legend = TANK_IDS.map((id, i) => {
+    const dash = TRACE_DASH[id] ? ` stroke-dasharray="${TRACE_DASH[id]}"` : "";
+    return `<li><svg class="legend-swatch" viewBox="0 0 36 8" aria-hidden="true"><line x1="1" y1="4" x2="35" y2="4" class="spark-line overlay-${i}"${dash}/></svg>${TANK_META[id].title}</li>`;
+  }).join("");
+  return `
+    <div class="overlay-wrap">
+      <svg class="trace overlay" viewBox="0 0 ${w} ${h}" role="img" aria-label="Four remaining-fuel traces over the captured period">
+        <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" class="spark-face"/>
+        <text class="axis-y" x="14" y="28">F</text>
+        <text class="axis-y" x="14" y="${h - 14}">E</text>
+        ${traces}
+        <text class="axis-x" x="36" y="${h - 6}">${fmtAxis(win.t0)}</text>
+        <text class="axis-x end" x="${w - 10}" y="${h - 6}">${fmtAxis(win.t1)}</text>
+      </svg>
+      <ul class="legend">${legend}</ul>
+    </div>
+  `;
+}
+
+export function renderHistoryInstrument(readings: Reading[], settings: AppSettings): string {
+  const panels = TANK_IDS.map((id) => renderTankHistoryPanel(id, historyPoints(readings, id, settings))).join("");
+  return `
+    <section class="instrument">
+      <h2>History instrument</h2>
+      <p class="bay-note">Remaining fuel over the captured period (F at the top, E at the bottom). Four traces stay separate — this is not one summed tank. Amber, starlight, hot amber, and dim traces plus dash patterns keep the pools distinct.</p>
+      ${renderOverlay(readings, settings)}
+      <div class="instrument-grid">${panels}</div>
+    </section>
+  `;
+}
+
+export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoint[]): string {
   const meta = TANK_META[tank];
   const known = m.percentUsed != null;
   const needle = fuelNeedleDeg(m.percentUsed);
@@ -177,6 +276,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics): string {
           </svg>
         </div>
         <div class="used-readout">${fmtPct(m.percentUsed)} used</div>
+        ${renderSpark(points)}
       </div>
       <dl class="metrics">
         <div class="metric"><span>Remaining</span><strong>${fmtPct(m.remainingPct)}</strong>${
@@ -210,9 +310,9 @@ export function renderApp(args: {
   lastImport?: LastImport;
 }): string {
   const now = new Date();
-  const cards = TANK_IDS.map((id) => renderTankCard(id, metricsForTank(args.readings, id, args.settings, now))).join(
-    "",
-  );
+  const cards = TANK_IDS.map((id) =>
+    renderTankCard(id, metricsForTank(args.readings, id, args.settings, now), historyPoints(args.readings, id, args.settings)),
+  ).join("");
   const n = args.readings.length;
   const history = sortedReadings(args.readings)
     .slice()
@@ -254,6 +354,8 @@ export function renderApp(args: {
       <p class="bay-note">Keep these separate. If Grok Bot launches a Cursor cloud agent, that run bills Cursor Models / Other Models / maybe on-demand as well as the Bot week — show both, do not merge. Plans do not stack: Cursor + SuperGrok + X Premium+ for Grok Bot = one Bot grant (the larger) on the Cursor account.</p>
       <div class="tank-grid">${cards}</div>
     </section>
+
+    ${renderHistoryInstrument(args.readings, args.settings)}
 
     <section class="console">
       <div class="panel">

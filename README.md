@@ -64,7 +64,7 @@ npm run preview
 1. Open [cursor.com/dashboard/spending](https://cursor.com/dashboard/spending) or Grok Bot **Settings → Usage**.
 2. Drop a screenshot, paste an image, or copy percent used, reset, optional USD, optional mix **cents**.
 3. Set **Captured at** if the snapshot is not “now”, then **Save pasted reading** if you typed text.
-4. Two or more timestamped readings unlock burn / empty-at. Three unlock acceleration.
+4. Two or more timestamped readings unlock burn / empty-at and the **History instrument** (remaining fuel over the captured period, four traces never summed). Three unlock acceleration. Each analog tank also shows a mini remaining-over-time spark.
 
 Readings live in this browser’s `localStorage` key `grok-usage-gauge.v1`. **Clear local data** wipes them. Nothing is posted to a server.
 
