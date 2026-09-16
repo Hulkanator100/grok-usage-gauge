@@ -54,7 +54,9 @@ async function handleFiles(list: FileList | File[]) {
     notice = [
       result.readings.length
         ? `Saved ${result.readings.length} reading${result.readings.length === 1 ? "" : "s"} from drop.`
-        : "No tank fill from this drop.",
+        : result.error
+          ? undefined
+          : "No tank fill from this drop.",
       ...result.notes,
     ]
       .filter(Boolean)
