@@ -102,6 +102,9 @@ async function handleFiles(list: FileList | File[]) {
     try {
       const result = await ingestFiles(files, capturedIso());
       paste = result.extracted || paste;
+      if (result.planHint && result.planHint !== state.settings.plan) {
+        state.settings.plan = result.planHint;
+      }
       if (result.readings.length) {
         state.readings = [...state.readings, ...result.readings];
         persist();
@@ -223,6 +226,18 @@ function bind() {
 
   document.getElementById("load-sample-csv")?.addEventListener("click", () => {
     void loadBundledCsv();
+  });
+
+  document.getElementById("export-json")?.addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `grok-usage-gauge-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    notice = "Downloaded readings JSON from this browser’s localStorage (not a file on the server).";
+    render();
   });
 
   document.getElementById("clear-data")?.addEventListener("click", () => {

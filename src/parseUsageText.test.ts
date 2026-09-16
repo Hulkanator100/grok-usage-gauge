@@ -41,6 +41,41 @@ On-demand monthly limit $20`;
   });
 });
 
+describe("Cursor Spending dashboard screenshot text", () => {
+  it("reads Pro+ Cursor Models 7%, Other Models 8%, Bot week 80% resetting in hours, on-demand off", () => {
+    const text = `Spending
+CURRENT PLAN
+Pro+ $60/mo
+Usage limits reset on Oct 10 (24 days left)
+Included in Pro+
+Cursor Models Includes Cursor Grok and Composer
+7% used
+Other Models
+8% used
+Grok Bot
+Included in Pro+
+Weekly usage
+80% used
+Resets Sep 17 (21 hours and 26 minutes left)
+On-Demand Usage
+On-demand spending is currently disabled
+Monthly Limit Disabled`;
+    const p = parseUsageText(text, "2026-09-16T19:00:00.000Z");
+    expect(p.tanks.cursorModelsMonthly?.percentUsed).toBe(7);
+    expect(p.tanks.otherModelsMonthly?.percentUsed).toBe(8);
+    expect(p.tanks.grokBotWeekly?.percentUsed).toBe(80);
+    expect(p.planHint).toBe("proPlus");
+    expect(p.onDemandDisabled).toBe(true);
+    expect(p.tanks.onDemandMonthly?.capUsd).toBe(0);
+    const end = p.tanks.grokBotWeekly?.periodEnd;
+    expect(end).toBeDefined();
+    const hours = (new Date(end!).getTime() - Date.parse("2026-09-16T19:00:00.000Z")) / 3_600_000;
+    expect(hours).toBeGreaterThan(20);
+    expect(hours).toBeLessThan(23);
+    expect(p.tanks.cursorModelsMonthly?.periodEnd).toContain("2026-10-10");
+  });
+});
+
 describe("Cursor surfaces", () => {
   it("parses Spending screenshot text into separate model tanks", () => {
     const p = parseUsageText(

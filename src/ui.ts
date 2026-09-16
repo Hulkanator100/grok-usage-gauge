@@ -240,6 +240,7 @@ export function renderApp(args: {
           <button type="button" id="load-example">Load example week</button>
           <button type="button" id="load-accel">Load accelerating week</button>
           <button type="button" id="load-sample-csv">Load bundled usage-events CSV</button>
+          <button type="button" id="export-json" class="ghost">Download history JSON</button>
           <button type="button" id="clear-data" class="danger">Clear local data</button>
         </div>
         <label>Cursor plan (Other Models included $)

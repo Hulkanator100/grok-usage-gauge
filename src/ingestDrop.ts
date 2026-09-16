@@ -15,6 +15,7 @@ export interface IngestResult {
   extracted: string;
   notes: string[];
   error?: string;
+  planHint?: "pro" | "proPlus" | "ultra";
 }
 
 function isCrdownload(file: File): boolean {
@@ -168,7 +169,7 @@ export async function ingestFile(file: File, capturedAt: string): Promise<Ingest
     }
   }
 
-  return { readings, extracted, notes, error: undefined };
+  return { readings, extracted, notes, error: undefined, planHint: parsed.planHint };
 }
 
 export async function ingestFiles(files: File[], capturedAt: string): Promise<IngestResult> {
@@ -179,6 +180,7 @@ export async function ingestFiles(files: File[], capturedAt: string): Promise<In
       combined.error = combined.error ? `${combined.error} ${one.error}` : one.error;
     }
     combined.readings.push(...one.readings);
+    if (one.planHint) combined.planHint = one.planHint;
     if (one.extracted) combined.extracted += (combined.extracted ? "\n\n---\n\n" : "") + one.extracted;
     combined.notes.push(...one.notes);
   }

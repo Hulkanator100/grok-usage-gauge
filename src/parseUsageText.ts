@@ -11,6 +11,8 @@ export interface ParsedUsage {
   tanks: Partial<Record<TankId, TankSnapshot>>;
   notes: string[];
   fillsTank: boolean;
+  planHint?: "pro" | "proPlus" | "ultra";
+  onDemandDisabled?: boolean;
 }
 
 function num(m: RegExpMatchArray | null, i = 1): number | undefined {
@@ -78,23 +80,43 @@ function mixFromText(text: string): MixCents | undefined {
   return Object.keys(mix).length ? mix : undefined;
 }
 
-function applyReset(text: string, capturedAt: string, snap: TankSnapshot, week: boolean): void {
-  const inDays = text.match(/resets?\s+in\s+(\d+)\s*days?/i);
-  if (inDays) {
-    snap.periodEnd = isoDaysFrom(capturedAt, Number(inDays[1]));
-    if (week) snap.periodStart = isoDaysBefore(snap.periodEnd, 7);
+function applyWeeklyReset(text: string, capturedAt: string, snap: TankSnapshot): void {
+  const weeklyLine = text.match(/weekly usage[\s\S]{0,200}/i)?.[0] ?? "";
+  const hoursLeft = weeklyLine.match(/(\d+)\s*hours?(?:\s+and\s+(\d+)\s*minutes?)?\s*left/i);
+  if (hoursLeft) {
+    const h = Number(hoursLeft[1]);
+    const m = Number(hoursLeft[2] ?? 0);
+    snap.periodEnd = new Date(new Date(capturedAt).getTime() + (h * 60 + m) * 60_000).toISOString();
+    snap.periodStart = isoDaysBefore(snap.periodEnd, 7);
     return;
   }
-  const resetLine = text.match(
-    /resets?\s*(?:on|at)?\s*:?\s*([A-Za-z]{3,9}\.? \d{1,2}(?:,?\s*\d{4})?(?:\s+\d{1,2}:\d{2}\s*(?:AM|PM)?)?)/i,
-  );
-  if (resetLine) {
-    const d = new Date(resetLine[1]);
+  const named = weeklyLine.match(/resets?\s+([A-Za-z]{3,9}\.? \d{1,2}(?:,?\s*\d{4})?)/i);
+  if (named) {
+    const year = new Date(capturedAt).getUTCFullYear();
+    const d = new Date(`${named[1]}, ${year}`);
     if (!Number.isNaN(d.getTime())) {
       snap.periodEnd = d.toISOString();
-      if (week) snap.periodStart = isoDaysBefore(snap.periodEnd, 7);
+      snap.periodStart = isoDaysBefore(snap.periodEnd, 7);
+      return;
     }
   }
+  const inDays = weeklyLine.match(/resets?\s+in\s+(\d+)\s*days?/i) ?? text.match(/resets?\s+in\s+(\d+)\s*days?/i);
+  if (inDays) {
+    snap.periodEnd = isoDaysFrom(capturedAt, Number(inDays[1]));
+    snap.periodStart = isoDaysBefore(snap.periodEnd, 7);
+  }
+}
+
+function applyMonthlyReset(text: string, capturedAt: string, snap: TankSnapshot): void {
+  const m = text.match(/usage limits reset on\s+([A-Za-z]{3,9}\.? \d{1,2}(?:,?\s*\d{4})?)/i);
+  if (!m) return;
+  const year = new Date(capturedAt).getUTCFullYear();
+  const d = new Date(`${m[1]}, ${year}`);
+  if (Number.isNaN(d.getTime())) return;
+  snap.periodEnd = d.toISOString();
+  const start = new Date(d.getTime());
+  start.setUTCMonth(start.getUTCMonth() - 1);
+  snap.periodStart = start.toISOString();
 }
 
 export function parseUsageText(text: string, capturedAt: string, fileName = ""): ParsedUsage {
@@ -117,59 +139,70 @@ export function parseUsageText(text: string, capturedAt: string, fileName = ""):
 
   const botPct =
     firstPercent(/weekly usage[:\s]*([\d.]+)\s*%/i, text) ??
-    firstPercent(/grok bot(?:\s+weekly)?[^%\d]{0,40}([\d.]+)\s*%/i, text) ??
-    (surface === "grok-bot-chat-banner" || /usage limit/i.test(text) ? firstPercent(/([\d.]+)\s*%\s*used/i, text) : undefined);
+    firstPercent(/grok bot[\s\S]{0,80}?([\d.]+)\s*%\s*used/i, text);
 
   const cursorPct =
-    firstPercent(/cursor models[:\s]*([\d.]+)\s*%/i, text) ?? firstPercent(/\bauto\b[^%\d]{0,24}([\d.]+)\s*%/i, text);
+    firstPercent(/cursor models[\s\S]{0,120}?([\d.]+)\s*%\s*used/i, text) ??
+    firstPercent(/cursor models[:\s]*([\d.]+)\s*%/i, text) ??
+    firstPercent(/\bauto\b[^%\d]{0,24}([\d.]+)\s*%/i, text);
   const otherPct =
-    firstPercent(/other models[:\s]*([\d.]+)\s*%/i, text) ?? firstPercent(/\bapi\b[^%\d]{0,24}([\d.]+)\s*%/i, text);
+    firstPercent(/other models[\s\S]{0,120}?([\d.]+)\s*%\s*used/i, text) ??
+    firstPercent(/other models[:\s]*([\d.]+)\s*%/i, text) ??
+    firstPercent(/\bapi\b[^%\d]{0,24}([\d.]+)\s*%/i, text);
+
+  const planHint: ParsedUsage["planHint"] = /pro\s*\+|pro plus/i.test(text)
+    ? "proPlus"
+    : /\bultra\b/i.test(text) && /current plan/i.test(text)
+      ? "ultra"
+      : /current plan[\s\S]{0,40}\bpro\b/i.test(text)
+        ? "pro"
+        : undefined;
+  const onDemandDisabled = /on-demand spending is currently disabled|monthly limit[\s\S]{0,40}disabled/i.test(text);
 
   if (surface === "grok-bot-chat-banner" || /reached your grok bot usage limit/i.test(text)) {
     tanks.grokBotWeekly = { percentUsed: botPct ?? 100 };
-    applyReset(text, capturedAt, tanks.grokBotWeekly, true);
+    applyWeeklyReset(text, capturedAt, tanks.grokBotWeekly);
     notes.push("Limit banner: included Bot week is empty until weekly reset.");
   } else if (botPct != null || surface === "grok-bot-settings") {
     tanks.grokBotWeekly = {
       percentUsed: botPct,
       mixCents: mixFromText(text),
-      spendUsd: money(/spend(?:ing)?[:\s]*\$?\s*([\d.]+)/i, text),
     };
-    applyReset(text, capturedAt, tanks.grokBotWeekly, true);
+    applyWeeklyReset(text, capturedAt, tanks.grokBotWeekly);
   }
 
   if (cursorPct != null || (surface === "cursor-spending" && /cursor models/i.test(text))) {
-    tanks.cursorModelsMonthly = {
-      percentUsed: cursorPct,
-      spendUsd: money(/cursor models[\s\S]{0,80}(?:spend|cost)[:\s]*\$?\s*([\d.]+)/i, text),
-    };
-    applyReset(text, capturedAt, tanks.cursorModelsMonthly, false);
+    tanks.cursorModelsMonthly = { percentUsed: cursorPct };
+    applyMonthlyReset(text, capturedAt, tanks.cursorModelsMonthly);
   }
 
   if (otherPct != null || (surface === "cursor-spending" && /other models/i.test(text))) {
-    tanks.otherModelsMonthly = {
-      percentUsed: otherPct,
-      spendUsd: money(/other models[\s\S]{0,80}(?:spend|cost)[:\s]*\$?\s*([\d.]+)/i, text),
-    };
-    applyReset(text, capturedAt, tanks.otherModelsMonthly, false);
+    tanks.otherModelsMonthly = { percentUsed: otherPct };
+    applyMonthlyReset(text, capturedAt, tanks.otherModelsMonthly);
   }
 
   const odBlock = text.match(/on[-\s]?demand[\s\S]{0,220}/i)?.[0] ?? "";
   const od = ofMoney(odBlock) ?? ofMoney(text);
-  const capUsd =
-    od?.cap ??
-    money(/on[-\s]?demand monthly limit[:\s]*\$?\s*([\d.]+)/i, text) ??
-    money(/monthly limit[:\s]*\$?\s*([\d.]+)/i, text);
-  const spendUsd =
-    od?.spend ??
-    money(/billed through cursor[\s\S]{0,48}?\$\s*([\d.]+)/i, text) ??
-    money(/on[-\s]?demand usage[\s\S]{0,48}?\$\s*([\d.]+)/i, text);
-  if (od || /on[-\s]?demand monthly limit|billed through cursor|on[-\s]?demand usage/i.test(text)) {
-    tanks.onDemandMonthly = { spendUsd, capUsd };
-    if (capUsd != null && capUsd > 0 && spendUsd != null) {
-      tanks.onDemandMonthly.percentUsed = (spendUsd / capUsd) * 100;
+  if (onDemandDisabled) {
+    tanks.onDemandMonthly = { spendUsd: 0, capUsd: 0, percentUsed: 0 };
+    applyMonthlyReset(text, capturedAt, tanks.onDemandMonthly);
+    notes.push("On-demand is disabled ($0 cap = hard stop).");
+  } else {
+    const capUsd =
+      od?.cap ??
+      money(/on[-\s]?demand monthly limit[:\s]*\$?\s*([\d.]+)/i, text) ??
+      money(/monthly limit[:\s]*\$?\s*([\d.]+)/i, text);
+    const spendUsd =
+      od?.spend ??
+      money(/billed through cursor[\s\S]{0,48}?\$\s*([\d.]+)/i, text) ??
+      money(/on[-\s]?demand usage[\s\S]{0,48}?\$\s*([\d.]+)/i, text);
+    if (od || /on[-\s]?demand monthly limit|billed through cursor|on[-\s]?demand usage/i.test(text)) {
+      tanks.onDemandMonthly = { spendUsd, capUsd };
+      if (capUsd != null && capUsd > 0 && spendUsd != null) {
+        tanks.onDemandMonthly.percentUsed = (spendUsd / capUsd) * 100;
+      }
+      applyMonthlyReset(text, capturedAt, tanks.onDemandMonthly);
     }
-    applyReset(text, capturedAt, tanks.onDemandMonthly, false);
   }
 
   const mix = mixFromText(text);
@@ -192,7 +225,7 @@ export function parseUsageText(text: string, capturedAt: string, fileName = ""):
     return s && (s.percentUsed != null || s.spendUsd != null || s.mixCents);
   });
 
-  return { surface, tanks, notes, fillsTank };
+  return { surface, tanks, notes, fillsTank, planHint, onDemandDisabled };
 }
 
 export function readingFromParsed(parsed: ParsedUsage, capturedAt: string, raw: string, source: Reading["source"]): Reading {
