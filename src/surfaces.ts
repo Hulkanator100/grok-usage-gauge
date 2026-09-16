@@ -138,7 +138,7 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
     title: "grok.com / SuperGrok / Tesla Grok (out of v1)",
     history:
       "Settings → Usage has % + product split + reset + Extra Usage $. Free Chat/Voice have a second shorter clock after 100%. That is a different account meter than Cursor Grok Bot. Tesla in-car Grok follows the signed-in Grok account. No public Tesla usage API.",
-    drop: "Recognized so we can warn: do not mix into these four tanks.",
+    drop: "Recognized and rejected: Weekly SuperGrok Limit, Extra Usage Credits, Auto Top-Up, Buy Credits. Do not mix into these four tanks. Use Cursor Grok Bot Settings → Usage instead.",
     tank: "Out of v1 — no tank",
     fillsTank: false,
   },

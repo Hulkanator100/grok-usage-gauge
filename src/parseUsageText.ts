@@ -30,6 +30,22 @@ function isoDaysBefore(endIso: string, days: number): string {
   return new Date(new Date(endIso).getTime() - days * 86400000).toISOString();
 }
 
+/** grok.com Settings → Usage (Weekly SuperGrok Limit, Extra Usage Credits). Not Cursor Grok Bot. */
+export function looksLikeGrokComUsage(blob: string): boolean {
+  if (/billed through cursor/i.test(blob)) return false;
+  if (/cursor models[\s\S]{0,160}%\s*used/i.test(blob) && /other models[\s\S]{0,160}%\s*used/i.test(blob)) {
+    return false;
+  }
+  return (
+    /weekly\s*super\s*grok\s*limit/i.test(blob) ||
+    /extra\s*usage\s*credits/i.test(blob) ||
+    (/auto\s*top[-\s]?up/i.test(blob) && /buy credits/i.test(blob)) ||
+    /grok\.com/i.test(blob) ||
+    (/product split/i.test(blob) && /extra usage/i.test(blob)) ||
+    (/companions|tesla grok/i.test(blob) && /%\s*used/i.test(blob))
+  );
+}
+
 function looksLikeCursorUsageDashboard(blob: string): boolean {
   const cards = /total\s*tokens/i.test(blob) && /\bincluded\b/i.test(blob) && /on[-\s]?demand/i.test(blob);
   const chart =
@@ -159,12 +175,13 @@ function parseCursorUsageDashboard(text: string, _capturedAt: string): ParsedUsa
   };
 }
 
+export const GROK_COM_REJECT_NOTE =
+  "Classified as grok.com SuperGrok Usage (Weekly SuperGrok Limit / Extra Usage Credits). That is a different account meter than Cursor Grok Bot. Out of v1 — tanks were not changed. Drop Grok Bot Settings → Usage, cursor.com/dashboard/spending, or a usage-events CSV instead.";
+
 function classifySurface(text: string, fileName = ""): SurfaceId {
   const blob = `${fileName}\n${text}`;
+  if (looksLikeGrokComUsage(blob)) return "grok-com";
   if (looksLikeCursorUsageDashboard(blob)) return "cursor-usage-dashboard";
-  if (/grok\.com|supergrok|imagine|companions|extra usage/i.test(blob) && !/billed through cursor/i.test(blob)) {
-    if (/settings\s*→\s*usage|product split/i.test(blob) || /grok\.com/i.test(fileName)) return "grok-com";
-  }
   if (/you.?ve reached your grok bot usage limit|resets in \d+\s*days/i.test(blob) && /grok bot/i.test(blob)) {
     return "grok-bot-chat-banner";
   }
@@ -256,7 +273,7 @@ export function parseUsageText(text: string, capturedAt: string, fileName = ""):
   const tanks: Partial<Record<TankId, TankSnapshot>> = {};
 
   if (surface === "grok-com") {
-    notes.push("This looks like grok.com / SuperGrok Usage — out of v1. Not mixed into Cursor tanks.");
+    notes.push(GROK_COM_REJECT_NOTE);
     return { surface, tanks, notes, fillsTank: false };
   }
   if (surface === "grok-bot-routines") {

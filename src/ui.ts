@@ -335,7 +335,7 @@ export function renderApp(args: {
       <div class="horizon" aria-hidden="true"></div>
       <p class="eyebrow">Four tanks · never one bar</p>
       <h1>Grok Usage Gauge</h1>
-      <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills spend (mix cents for grok-bot-*); Bot/Cursor Models stay spend-only unless % is known; Other Models / on-demand % use plan/cap. Chrome <code>.crdownload</code> leftovers are empty — re-export. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
+      <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills spend (mix cents for grok-bot-*); Bot/Cursor Models stay spend-only unless % is known; Other Models / on-demand % use plan/cap. Chrome <code>.crdownload</code> leftovers are empty — re-export. <strong>grok.com</strong> SuperGrok Usage (Weekly SuperGrok Limit, Extra Usage Credits) is detected and rejected — that is not the Cursor Grok Bot week. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
       <p id="origin-banner" class="origin-banner" role="note"></p>
       ${
         args.lastImport

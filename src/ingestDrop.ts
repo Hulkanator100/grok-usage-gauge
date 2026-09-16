@@ -194,6 +194,10 @@ export async function ingestFile(file: File, capturedAt: string): Promise<Ingest
   const notes = [...parsed.notes];
   let readings: Reading[] = [];
 
+  if (!parsed.fillsTank && (parsed.surface === "grok-com" || parsed.surface === "grok-bot-routines" || parsed.surface === "cursor-bugbot")) {
+    return { readings: [], extracted, notes, error: undefined, planHint: parsed.planHint };
+  }
+
   if (parsed.fillsTank) {
     readings = [
       {

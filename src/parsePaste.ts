@@ -1,7 +1,7 @@
 import type { MixCents, Reading, TankId, TankSnapshot, TokenTotals } from "./types";
 import { TANK_IDS } from "./types";
 import { looksLikeUsageEventsCsv, parseUsageEventsCsv } from "./parseUsageCsv";
-import { parseUsageText, readingFromParsed } from "./parseUsageText";
+import { GROK_COM_REJECT_NOTE, looksLikeGrokComUsage, parseUsageText, readingFromParsed } from "./parseUsageText";
 
 const TANK_ALIASES: Array<{ id: TankId; patterns: RegExp[] }> = [
   {
@@ -298,6 +298,10 @@ export function parsePaste(input: string, capturedAt = new Date().toISOString())
 
   if (looksLikeUsageEventsCsv(trimmed)) {
     return parseUsageEventsCsv(trimmed, { source: "paste" });
+  }
+
+  if (looksLikeGrokComUsage(trimmed)) {
+    throw new Error(GROK_COM_REJECT_NOTE);
   }
 
   const fromScreen = parseUsageText(trimmed, capturedAt);

@@ -24,7 +24,7 @@ Chrome often leaves `usage-events-*.csv.crdownload` at **0 bytes**. The gauge re
 | CLI `/usage` | Auto/API included meters, on-demand vs limit, reset | Screenshot or copied `/usage` | Cursor month |
 | Cloud Agents | Analytics = counts; dollars = usage events. Grok Bot-launched agents also hit Cursor month | Spending screenshot | Tanks 2/3/(4) **and** Bot week |
 | Bugbot | GitHub PR reviews; team analytics ≠ $ | Spending after runs | Other / on-demand |
-| grok.com Settings → Usage | SuperGrok week, product split, Extra Usage $ | **Out of v1** — rejected | none |
+| grok.com Settings → Usage | SuperGrok week, Extra Usage Credits, Auto Top-Up | **Out of v1** — detected and rejected (sidebar “Grok Bot” does not fill tank 1) | none |
 
 Sample droppable text lives in `public/samples/`.
 

@@ -122,6 +122,51 @@ product split`,
     expect(p.surface).toBe("grok-com");
     expect(p.fillsTank).toBe(false);
   });
+
+  it("rejects the grok.com Weekly SuperGrok Limit screenshot (sidebar Grok Bot must not fill tank 1)", async () => {
+    const text = `Chat
+Imagine
+Library
+Grok Bot
+Plugins
+Usage
+Weekly SuperGrok Limit
+0% used
+Resets September 21, 2026 at 4:37 PM
+Extra Usage Credits
+$5.00
+Additional Credits
+Buy Credits
+Auto Top-Up`;
+    const p = parseUsageText(text, CAPTURE, "grok-dot-com-usage.png");
+    expect(p.surface).toBe("grok-com");
+    expect(p.fillsTank).toBe(false);
+    expect(p.tanks.grokBotWeekly).toBeUndefined();
+    expect(p.notes.join(" ")).toMatch(/different account meter/i);
+
+    expect(() => parsePaste(text, CAPTURE)).toThrow(/SuperGrok/);
+
+    const file = new File([text], "grok-com-usage.txt", { type: "text/plain" });
+    const result = await ingestFile(file, CAPTURE);
+    expect(result.readings).toHaveLength(0);
+    expect(result.notes.join(" ")).toMatch(/Weekly SuperGrok Limit/i);
+  });
+
+  it("still treats Cursor Grok Bot Settings as tank 1 when SuperGrok is only a linked grant", () => {
+    const p = parseUsageText(
+      `Usage & Billing
+Weekly usage 61.4%
+Resets in 2 days
+On-demand usage
+Billed through Cursor
+$2.10
+On-demand monthly limit $20
+Linked SuperGrok`,
+      CAPTURE,
+    );
+    expect(p.surface).toBe("grok-bot-settings");
+    expect(p.tanks.grokBotWeekly?.percentUsed).toBe(61.4);
+  });
 });
 
 describe("Cursor dashboard Usage token chart", () => {
