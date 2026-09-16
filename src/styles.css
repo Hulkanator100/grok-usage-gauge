@@ -1,0 +1,211 @@
+:root {
+  color-scheme: dark;
+  --bg: #12140f;
+  --bg-2: #1b1f16;
+  --panel: #22281c;
+  --ink: #e8edd9;
+  --muted: #a7b08f;
+  --line: #3a4330;
+  --ok: #6fbf73;
+  --warm: #d2b15a;
+  --hot: #e08a3c;
+  --critical: #e35d4a;
+  --accent: #c5e36a;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #2a331c 0%, transparent 50%),
+    var(--bg);
+  color: var(--ink);
+}
+
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.masthead h1 {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  margin: 0.2rem 0 0.6rem;
+  letter-spacing: -0.03em;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  color: var(--accent);
+  margin: 0;
+}
+
+.lede, .bay-note, .surfaces, .out-of-v1, .token-note {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+a { color: var(--accent); }
+
+.bay-title, .console h2, .history h2 {
+  margin-bottom: 0.4rem;
+}
+
+.tank-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .tank-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .tank-grid { grid-template-columns: 1fr; }
+}
+
+.tank-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  min-height: 100%;
+}
+
+.tank-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.clock {
+  margin: 0.2rem 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.tank-visual {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 0.8rem;
+}
+
+.tank-cylinder {
+  width: 72px;
+  height: 160px;
+  border: 3px solid #8b9474;
+  border-radius: 8px 8px 18px 18px;
+  position: relative;
+  overflow: hidden;
+  background: #0c0e0a;
+  box-shadow: inset 8px 0 12px rgba(255,255,255,0.05);
+}
+
+.liquid {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, #d7e36a, #7aa33a);
+  transition: height 240ms ease;
+}
+
+.tank-card.warm .liquid { background: linear-gradient(180deg, #f0d27a, #c48a2a); }
+.tank-card.hot .liquid { background: linear-gradient(180deg, #f0a05a, #c45a1c); }
+.tank-card.critical .liquid { background: linear-gradient(180deg, #f08070, #b83028); }
+
+.used-readout {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.35rem;
+  font-weight: 650;
+}
+
+.metrics { margin: 0; }
+.metric {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--line);
+}
+.metric span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.metric strong { font-size: 0.95rem; }
+.metric em { font-style: normal; color: var(--muted); font-size: 0.8rem; }
+
+.hard-stop strong { color: var(--critical); }
+
+.accel-warn {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  background: #3a1c16;
+  border: 1px solid #e35d4a;
+  border-radius: 10px;
+  color: #ffd8d1;
+  font-size: 0.9rem;
+}
+
+.mix { margin-top: 0.6rem; font-size: 0.85rem; }
+.mix ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+.surfaces { font-size: 0.78rem; margin-bottom: 0; }
+
+.console {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+@media (max-width: 900px) {
+  .console { grid-template-columns: 1fr; }
+}
+
+.panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+label {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.7rem 0;
+  font-size: 0.85rem;
+}
+
+textarea, input, select {
+  width: 100%;
+  background: #0f120c;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+}
+
+textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+
+.row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+button {
+  background: var(--accent);
+  color: #1a210f;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+button.danger { background: #6b2a22; color: #ffd8d1; }
+
+.error { color: #ffb4a8; }
+.notice { color: var(--accent); }
+
+.history ol { padding-left: 1.2rem; color: var(--muted); }
+.history li { margin: 0.45rem 0; }
+.history span { display: inline-block; margin-right: 0.7rem; }

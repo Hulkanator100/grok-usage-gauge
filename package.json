@@ -1,0 +1,18 @@
+{
+  "name": "grok-usage-gauge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local four-tank Grok / Cursor usage gauge. Paste spending dashboard figures; nothing is sent to a server.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vitest": "^3.2.4"
+  }
+}
