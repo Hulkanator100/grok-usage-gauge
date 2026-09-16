@@ -21,7 +21,22 @@ function fillOriginBanner() {
   const el = document.getElementById("origin-banner");
   if (!el) return;
   const here = `${window.location.origin}${window.location.pathname}`;
-  el.innerHTML = `This copy is <strong>${here}</strong>. Readings are in <em>this browser on this PC</em> (localStorage). Shutting the computer off does not erase them. A terminal is only needed while you have the page open if you serve it with npm. GitHub can host the page; it cannot be a live usage database. Download history JSON for a file backup you can keep in a <em>private</em> gist or repo.`;
+  const host = window.location.hostname;
+  let extra: string;
+  if (/\.cvm\.dev$|\.cursor\.sh$|agent\.cvm/i.test(host)) {
+    extra =
+      "You do <strong>not</strong> need a terminal on your PC for this tab — the server is the cloud agent. Close your laptop if you want; this Edge copy of the tanks stays. The URL itself dies when the agent sleeps. For a week without the agent, enable GitHub Pages and use <code>https://hulkanator100.github.io/grok-usage-gauge/</code>.";
+  } else if (/github\.io$/i.test(host)) {
+    extra =
+      "You do <strong>not</strong> need a terminal. This is the static GitHub copy. Shut the PC off anytime; reopen this same URL in Edge.";
+  } else if (host === "127.0.0.1" || host === "localhost") {
+    extra =
+      "A terminal is only required while this localhost tab is open (<code>npm run dev</code>). You can close it when you close the tab. History stays in Edge after shutdown.";
+  } else {
+    extra =
+      "A terminal is only needed if you personally ran <code>npm run dev</code>. GitHub Pages needs no terminal.";
+  }
+  el.innerHTML = `This copy is <strong>${here}</strong>. Readings are in <em>this browser on this PC</em> (localStorage). ${extra} Download history JSON for a private-file backup.`;
 }
 
 function setLastImport(next: LastImport | undefined) {
