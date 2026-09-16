@@ -1,6 +1,6 @@
 import { SURFACE_GUIDE } from "./surfaces";
 import { computeTankMetrics, otherModelsCapUsd, type TankMetrics } from "./metrics";
-import type { AppSettings, LastImport, Reading, TankId } from "./types";
+import type { AppSettings, LastImport, Reading, TankId, XGrokPlan } from "./types";
 import { CURSOR_TANK_IDS, isXGrokTank, OTHER_MODELS_INCLUDED_USD, TANK_IDS, TANK_META, X_GROK_CAPS, X_GROK_TANK_IDS } from "./types";
 import { sortedReadings } from "./storage";
 import { historyPoints, polylineRemaining, timeWindow, type HistoryPoint } from "./chart";
@@ -614,18 +614,21 @@ export function renderApp(args: {
 
         <div class="control-block">
           <h3>X Grok · 2-hour windows</h3>
-          <p class="slide-hint">Fallback request caps until a paste of 42/100 overrides them. Separate from Cursor tanks.</p>
-          <label class="select-field">X plan
-            <select id="x-plan">
-              <option value="free" ${args.settings.xPlan === "free" ? "selected" : ""}>Free · L ${X_GROK_CAPS.free.light} · M ${X_GROK_CAPS.free.medium} · H ${X_GROK_CAPS.free.heavy}</option>
-              <option value="premium" ${args.settings.xPlan === "premium" ? "selected" : ""}>Premium · L ${X_GROK_CAPS.premium.light} · M ${X_GROK_CAPS.premium.medium} · H ${X_GROK_CAPS.premium.heavy}</option>
-              <option value="premiumPlus" ${args.settings.xPlan === "premiumPlus" ? "selected" : ""}>Premium+ · L ${X_GROK_CAPS.premiumPlus.light} · M ${X_GROK_CAPS.premiumPlus.medium} · H ${X_GROK_CAPS.premiumPlus.heavy}</option>
+          <p class="slide-hint">Three separate request tanks on grok.x.com / the X app: Light (Fast), Medium (Think), and Heavy. They are not Cursor $, not Grok Bot week, and not grok.com SuperGrok. A paste such as 42/100 overrides these fallbacks.</p>
+          <label class="select-field">X Grok plan
+            <select id="x-plan" aria-describedby="x-plan-legend">
+              <option value="free" ${args.settings.xPlan === "free" ? "selected" : ""}>${xPlanOptionLabel("free")}</option>
+              <option value="premium" ${args.settings.xPlan === "premium" ? "selected" : ""}>${xPlanOptionLabel("premium")}</option>
+              <option value="premiumPlus" ${args.settings.xPlan === "premiumPlus" ? "selected" : ""}>${xPlanOptionLabel("premiumPlus")}</option>
             </select>
           </label>
+          <p id="x-plan-legend" class="x-plan-legend">
+            ${xPlanLegend(args.settings.xPlan)}
+          </p>
           ${sliderField({
             id: "x-light-cap",
-            label: "Light / Fast",
-            hint: "Requests per ~2 hours",
+            label: "Light (Fast)",
+            hint: "Quick replies. Requests in the current ~2-hour window.",
             min: 1,
             max: 200,
             step: 1,
@@ -634,8 +637,8 @@ export function renderApp(args: {
           })}
           ${sliderField({
             id: "x-medium-cap",
-            label: "Medium / Think",
-            hint: "Requests per ~2 hours",
+            label: "Medium (Think)",
+            hint: "Deeper reasoning. Requests in the current ~2-hour window.",
             min: 1,
             max: 80,
             step: 1,
@@ -645,7 +648,7 @@ export function renderApp(args: {
           ${sliderField({
             id: "x-heavy-cap",
             label: "Heavy",
-            hint: "Requests per ~2 hours",
+            hint: "Longest / heaviest replies. Requests in the current ~2-hour window.",
             min: 1,
             max: 40,
             step: 1,
@@ -695,6 +698,22 @@ export function formatUsdCap(n: number, hardStop = false): string {
 
 export function formatRequestCap(n: number): string {
   return `${Math.round(n)} req`;
+}
+
+function xPlanName(plan: XGrokPlan): string {
+  if (plan === "premiumPlus") return "Premium+";
+  if (plan === "premium") return "Premium";
+  return "Free";
+}
+
+export function xPlanOptionLabel(plan: XGrokPlan): string {
+  const c = X_GROK_CAPS[plan];
+  return `${xPlanName(plan)} — Light ${c.light} / Medium ${c.medium} / Heavy ${c.heavy} per 2h`;
+}
+
+function xPlanLegend(plan: XGrokPlan): string {
+  const c = X_GROK_CAPS[plan];
+  return `Fallback for ${xPlanName(plan)}: <strong>Light (Fast) ${c.light}</strong> · <strong>Medium (Think) ${c.medium}</strong> · <strong>Heavy ${c.heavy}</strong> requests each ~2-hour window. Sliders below stay in sync until a paste overrides them.`;
 }
 
 function sliderFillPct(min: number, max: number, value: number): number {

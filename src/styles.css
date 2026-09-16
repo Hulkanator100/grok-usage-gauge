@@ -319,6 +319,21 @@ a { color: var(--amber); }
   font-size: 0.88rem;
 }
 .plan-readout strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.x-plan-legend {
+  margin: 0.45rem 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  color: var(--dim);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  background: var(--surface-inset);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+}
+.x-plan-legend strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
 .slide-field { margin: 0.7rem 0 0.15rem; }
 .slide-head {
   display: flex;

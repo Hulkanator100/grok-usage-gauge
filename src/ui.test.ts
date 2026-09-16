@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRequestCap, formatUsdCap, fuelNeedleDeg, renderApp, renderHistoryInstrument } from "./ui";
+import { formatRequestCap, formatUsdCap, fuelNeedleDeg, renderApp, renderHistoryInstrument, xPlanOptionLabel } from "./ui";
 import { buildAcceleratingWeek, buildExampleWeek } from "./examples";
 import { DEFAULT_SETTINGS } from "./types";
 
@@ -78,6 +78,10 @@ describe("local controls sliders", () => {
     expect(html).toContain('id="ondemand-cap-out"');
     expect(html).toContain("$20.00");
     expect(html).toContain("100 req");
+    expect(html).toContain("Light 100 / Medium 30 / Heavy 10 per 2h");
+    expect(html).toContain("Light (Fast) 100");
+    expect(html).toContain("Medium (Think) 30");
+    expect(html).not.toContain("· L ");
     expect(html).not.toContain('id="custom-other"');
   });
 
@@ -96,6 +100,8 @@ describe("local controls sliders", () => {
     expect(formatUsdCap(0, true)).toBe("$0 hard stop");
     expect(formatUsdCap(20, true)).toBe("$20.00");
     expect(formatRequestCap(30)).toBe("30 req");
+    expect(xPlanOptionLabel("premiumPlus")).toBe("Premium+ — Light 100 / Medium 30 / Heavy 10 per 2h");
+    expect(xPlanOptionLabel("free")).toBe("Free — Light 20 / Medium 10 / Heavy 5 per 2h");
   });
 });
 
