@@ -38,12 +38,9 @@ describe("analog fuel needle", () => {
       paste: "",
       capturedAtLocal: "2026-09-16T18:00",
     });
-    expect(html).toMatch(/unknown-needle" style="--needle:-90(?:\.0)?deg"/);
-    const needles = [...html.matchAll(/class="needle-g" transform="rotate\(([-0-9.]+) 100 100\)"/g)].map((m) =>
-      Number(m[1]),
-    );
-    expect(needles.length).toBe(7);
-    expect(needles.every((d) => d === -90)).toBe(true);
+    expect(html).toMatch(/unknown-needle" data-empty="true" style="--needle:-90\.0deg"/);
+    expect(html.match(/class="needle-g"/g)?.length).toBe(7);
+    expect(html.match(/class="needle-g" transform="rotate/g)).toBeNull();
     expect(html).toContain("remain-line");
     expect(html).toContain("— remaining");
     expect(html).toContain("— used");

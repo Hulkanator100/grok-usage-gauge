@@ -333,8 +333,8 @@ function gaugeReadout(m: TankMetrics): string {
 
 export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoint[]): string {
   const meta = TANK_META[tank];
-  const known = m.percentUsed != null;
-  const needle = fuelNeedleDeg(m.percentUsed);
+  const known = m.percentUsed != null && !Number.isNaN(m.percentUsed);
+  const needle = known ? fuelNeedleDeg(m.percentUsed) : -90;
   return `
     <article class="tank-card ${fillClass(m.percentUsed)}" data-tank="${tank}">
       <header>
@@ -342,7 +342,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
         <p class="clock">${meta.clock}</p>
       </header>
       <div class="tank-visual">
-        <div class="fuel-gauge ${known ? "" : "unknown-needle"}" style="--needle:${needle}deg">
+        <div class="fuel-gauge ${known ? "" : "unknown-needle"}" data-empty="${known ? "false" : "true"}" style="--needle:${needle.toFixed(1)}deg">
           <svg viewBox="0 0 200 200" role="img" aria-label="${meta.title} ${fmtPct(m.remainingPct)} remaining, ${fmtPct(m.percentUsed)} used">
             <defs>
               <linearGradient id="bezel-${tank}" x1="0" y1="0" x2="1" y2="1">
@@ -370,7 +370,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
             <text class="mark-half" x="100" y="52">½</text>
             <circle class="glass" cx="100" cy="100" r="86" fill="url(#glass-${tank})"/>
             <text class="fuel-word" x="100" y="168">FUEL</text>
-            <g class="needle-g" transform="rotate(${needle.toFixed(1)} 100 100)">
+            <g class="needle-g"${known ? ` transform="rotate(${needle.toFixed(1)} 100 100)"` : ""}>
               <polygon class="needle-shadow" points="100,26 107,106 100,118 93,106"/>
               <polygon class="needle" fill="#e10600" stroke="#ff4d4d" points="100,24 106.5,104 100,114 93.5,104"/>
               <circle class="hub" cx="100" cy="100" r="11"/>

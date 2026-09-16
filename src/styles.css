@@ -210,8 +210,14 @@ a { color: var(--amber); }
   stroke: #5a5a5a;
 }
 
+.fuel-gauge.unknown-needle .needle-g,
+.fuel-gauge[data-empty="true"] .needle-g {
+  transform: rotate(-90deg);
+  transform-box: view-box;
+  transform-origin: 100px 100px;
+}
 .fuel-gauge.unknown-needle .rim-glow { opacity: 0.2; }
-.fuel-gauge.unknown-needle .empty-zone { opacity: 0.25; }
+.fuel-gauge.unknown-needle .empty-zone { opacity: 0.85; }
 
 .tank-card.critical .rim-glow { stroke: var(--amber-hot); }
 
