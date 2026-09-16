@@ -29,6 +29,8 @@ export interface TokenTotals {
   input?: number;
   output?: number;
   cacheRead?: number;
+  /** Dashboard Usage chart / card totals (not input vs output). Not tank %. */
+  total?: number;
 }
 
 export interface TankSnapshot {

@@ -5,6 +5,7 @@ export type SurfaceId =
   | "grok-bot-cua"
   | "grok-bot-mcp"
   | "cursor-spending"
+  | "cursor-usage-dashboard"
   | "cursor-usage-events"
   | "cursor-editor"
   | "cursor-cli"
@@ -76,6 +77,15 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
       "cursor.com/dashboard/spending: separate Cursor Models % and Other Models % (never one combined bar), on-demand spend vs Monthly Limit, billing-cycle reset. This is the v1 source of truth for tanks 2–4. grok-bot-* rows under Cursor Models are a display bug — header % is Cursor-app usage.",
     drop: "Screenshot or copy of the Spending page. Highest-value drop after Grok Bot Settings.",
     tank: "Cursor Models, Other Models, on-demand $",
+    fillsTank: true,
+  },
+  {
+    id: "cursor-usage-dashboard",
+    title: "Cursor — dashboard Usage (token chart)",
+    history:
+      "cursor.com/dashboard/usage shows Total tokens / Included / On-demand for the selected 1d · 7d · 30d · MTD range, plus a cumulative chart grouped by model. Those cards are token counts, not tank %. Cost in the table is often the word Included or Free. Export CSV for dollars. Spending is the % meters for Cursor Models / Other Models.",
+    drop: "Screenshot is recognized (tokens + on-demand 0 in that window). Prefer Export CSV or a Spending screenshot for tank %. Do not treat 108M tokens as 108% used.",
+    tank: "On-demand $0 if the On-demand token card is 0; Cursor/Other get token context only. Chart range is not Bot weekly reset.",
     fillsTank: true,
   },
   {

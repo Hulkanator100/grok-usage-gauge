@@ -70,10 +70,17 @@ function mixBlock(m: TankMetrics): string {
   return `<div class="mix"><h4>Mix (cents, not tokens)</h4><ul>${rows}</ul></div>`;
 }
 
+function fmtTokens(n: number | undefined): string {
+  if (n == null || Number.isNaN(n)) return "—";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(Math.round(n));
+}
+
 function tokenNote(m: TankMetrics): string {
   if (!m.tokenTotals) return "";
   const t = m.tokenTotals;
-  return `<p class="token-note">Token totals are optional context only (routines re-send conversation; cache reads inflate tokens). Weekly % is cost-based. in ${t.input ?? "—"} · out ${t.output ?? "—"} · cache ${t.cacheRead ?? "—"}</p>`;
+  return `<p class="token-note">Token totals are optional context only (routines re-send conversation; cache reads inflate tokens). Weekly % is cost-based. chart ${fmtTokens(t.total)} · in ${fmtTokens(t.input)} · out ${fmtTokens(t.output)} · cache ${fmtTokens(t.cacheRead)}</p>`;
 }
 
 function rangeBlock(m: TankMetrics): string {

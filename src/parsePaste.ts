@@ -98,6 +98,7 @@ function pickSnapshot(raw: Record<string, unknown>): TankSnapshot {
       input: asNumber(t.input),
       output: asNumber(t.output),
       cacheRead: asNumber(t.cacheRead) ?? asNumber(t.cache),
+      total: asNumber(t.total),
     };
   }
   return { percentUsed, spendUsd, capUsd, periodStart, periodEnd, mixCents, tokenTotals };
@@ -109,7 +110,8 @@ function hasAny(snap: TankSnapshot): boolean {
     snap.spendUsd != null ||
     snap.capUsd != null ||
     snap.periodEnd != null ||
-    snap.mixCents != null
+    snap.mixCents != null ||
+    snap.tokenTotals != null
   );
 }
 
@@ -307,7 +309,7 @@ export function parsePaste(input: string, capturedAt = new Date().toISOString())
   if (!TANK_IDS.some((id) => reading.tanks[id] && hasAny(reading.tanks[id]!))) {
     throw new Error(
       fromScreen.notes[0] ??
-        "Could not find tank figures. Drop a screenshot of Grok Bot Settings → Usage or cursor.com/dashboard/spending, or paste % used, reset, and optional $.",
+        "Could not find tank figures. Drop Spending (% used) or Grok Bot Settings → Usage, Export CSV from dashboard Usage, or paste % used, reset, and optional $. The Usage token chart is not tank %.",
     );
   }
   return [reading];

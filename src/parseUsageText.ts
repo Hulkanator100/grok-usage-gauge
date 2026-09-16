@@ -1,6 +1,7 @@
 import type { MixCents, Reading, TankId, TankSnapshot } from "./types";
 import { TANK_IDS } from "./types";
 import type { SurfaceId } from "./surfaces";
+import { isCursorModelsModel, isGrokBotModel } from "./parseUsageCsv";
 
 function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -29,8 +30,138 @@ function isoDaysBefore(endIso: string, days: number): string {
   return new Date(new Date(endIso).getTime() - days * 86400000).toISOString();
 }
 
+function looksLikeCursorUsageDashboard(blob: string): boolean {
+  const cards = /total\s*tokens/i.test(blob) && /\bincluded\b/i.test(blob) && /on[-\s]?demand/i.test(blob);
+  const chart =
+    /your usage per day|cumulative tokens|group by/i.test(blob) ||
+    /export\s*csv/i.test(blob) ||
+    /date\s*\(utc\)/i.test(blob);
+  const spendingMeters = /cursor models[\s\S]{0,120}%\s*used/i.test(blob) && /other models[\s\S]{0,120}%\s*used/i.test(blob);
+  return cards && chart && !spendingMeters;
+}
+
+/** 108.1M, 145.2K, 0 → raw token count. */
+export function parseCompactCount(raw: string): number | undefined {
+  const m = String(raw)
+    .trim()
+    .replace(/,/g, "")
+    .match(/^([\d]+(?:\.\d+)?)\s*([KMBT])?$/i);
+  if (!m) return undefined;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n)) return undefined;
+  const u = (m[2] || "").toUpperCase();
+  const mul = u === "K" ? 1e3 : u === "M" ? 1e6 : u === "B" ? 1e9 : u === "T" ? 1e12 : 1;
+  return n * mul;
+}
+
+function cardCount(label: RegExp, text: string): number | undefined {
+  const re = new RegExp(label.source + String.raw`\s*([\d,]+(?:\.\d+)?)\s*([KMBT])?`, "i");
+  const m = text.match(re);
+  if (!m) return undefined;
+  return parseCompactCount(`${m[1]}${m[2] ?? ""}`);
+}
+
+function listedModels(text: string): string[] {
+  const found = text.match(
+    /(?:cursor-grok|composer|claude|gemini|gpt|o[134])[\w.-]*/gi,
+  );
+  if (!found) return [];
+  return [...new Set(found.map((s) => s.toLowerCase()))];
+}
+
+function isOtherModelsModel(model: string): boolean {
+  if (isGrokBotModel(model) || isCursorModelsModel(model)) return false;
+  return /claude|gpt-|gemini|sonnet|opus|\bo[134]\b/i.test(model);
+}
+
+function parseDashboardCards(text: string): { total?: number; included?: number; onDemand?: number } {
+  let total = cardCount(/total\s*tokens/, text);
+  let included = cardCount(/\bincluded\b/, text);
+  let onDemand = cardCount(/on[-\s]?demand/, text);
+  // Sidebar OCR often yields "On-demand" then a nav index like "8 Plugins" before 108.1M 104.3M 0.
+  if (onDemand != null && onDemand >= 1 && onDemand < 10 && (total == null || total >= 1e6)) {
+    onDemand = undefined;
+  }
+  if (included != null && included < 10) included = undefined;
+
+  const collapsed = text.replace(/\s+/g, " ");
+  const trio = collapsed.match(
+    /total\s*tokens.{0,220}?([\d.]+)\s*([KMB])\s+([\d.]+)\s*([KMB])\s+(\d+(?:\.\d+)?)(?:\s*([KMB]))?/i,
+  );
+  if (trio) {
+    total ??= parseCompactCount(`${trio[1]}${trio[2]}`);
+    included ??= parseCompactCount(`${trio[3]}${trio[4]}`);
+    onDemand ??= parseCompactCount(`${trio[5]}${trio[6] ?? ""}`);
+  }
+  return { total, included, onDemand };
+}
+
+function parseCursorUsageDashboard(text: string, _capturedAt: string): ParsedUsage {
+  const notes: string[] = [];
+  const tanks: Partial<Record<TankId, TankSnapshot>> = {};
+  const { total, included, onDemand: onDemandTokens } = parseDashboardCards(text);
+  const models = listedModels(text);
+  const cursorModels = models.filter((m) => isCursorModelsModel(m) && !isGrokBotModel(m));
+  const otherModels = models.filter(isOtherModelsModel);
+  const botModels = models.filter(isGrokBotModel);
+
+  notes.push(
+    "This is cursor.com/dashboard/usage (token chart), not Spending %. Tokens are not tank fill. Export CSV for $, or screenshot Spending for Cursor Models / Other Models %.",
+  );
+  if (total != null || included != null || onDemandTokens != null) {
+    notes.push(
+      `Selected-range cards: total ${total ?? "—"} tokens · included ${included ?? "—"} · on-demand ${onDemandTokens ?? "—"}. The 1d/7d/MTD chips are a chart filter, not Grok Bot weekly reset.`,
+    );
+  }
+  if (models.length) {
+    notes.push(`Models on the chart: ${models.join(", ")}.`);
+  }
+  if (cursorModels.length && otherModels.length) {
+    notes.push("Chart mixes Cursor Models (Grok/Composer) and Other Models (Claude/GPT/Gemini) — included tokens are not assigned as one tank %.");
+  }
+  if (botModels.length) {
+    notes.push("grok-bot-* rows on Usage are Bot-week mix (cost in CSV), not Cursor Models header %.");
+  }
+
+  if (cursorModels.length) {
+    tanks.cursorModelsMonthly = { tokenTotals: { total: included ?? total } };
+  } else if (otherModels.length) {
+    tanks.otherModelsMonthly = { tokenTotals: { total: included ?? total } };
+  } else if (included != null || total != null) {
+    tanks.cursorModelsMonthly = { tokenTotals: { total: included ?? total } };
+  }
+
+  if (onDemandTokens != null) {
+    tanks.onDemandMonthly = {
+      tokenTotals: { total: onDemandTokens },
+      // Token card 0 in this window is $0 on-demand billed in that window — not a monthly cap from Spending.
+      spendUsd: onDemandTokens === 0 ? 0 : undefined,
+    };
+  }
+
+  const planHint: ParsedUsage["planHint"] = /pro\s*\+|pro plus/i.test(text)
+    ? "proPlus"
+    : /\bultra\b/i.test(text)
+      ? "ultra"
+      : undefined;
+
+  const fillsTank = TANK_IDS.some((id) => {
+    const s = tanks[id];
+    return s && (s.percentUsed != null || s.spendUsd != null || s.mixCents || s.tokenTotals);
+  });
+
+  return {
+    surface: "cursor-usage-dashboard",
+    tanks,
+    notes,
+    fillsTank,
+    planHint,
+  };
+}
+
 function classifySurface(text: string, fileName = ""): SurfaceId {
   const blob = `${fileName}\n${text}`;
+  if (looksLikeCursorUsageDashboard(blob)) return "cursor-usage-dashboard";
   if (/grok\.com|supergrok|imagine|companions|extra usage/i.test(blob) && !/billed through cursor/i.test(blob)) {
     if (/settings\s*→\s*usage|product split/i.test(blob) || /grok\.com/i.test(fileName)) return "grok-com";
   }
@@ -136,6 +267,9 @@ export function parseUsageText(text: string, capturedAt: string, fileName = ""):
     notes.push("Bugbot history is PR reviews, not a usage export. Check Cursor Spending after runs.");
     return { surface, tanks, notes, fillsTank: false };
   }
+  if (surface === "cursor-usage-dashboard") {
+    return parseCursorUsageDashboard(text, capturedAt);
+  }
 
   const botPct =
     firstPercent(/weekly usage[:\s]*([\d.]+)\s*%/i, text) ??
@@ -222,7 +356,7 @@ export function parseUsageText(text: string, capturedAt: string, fileName = ""):
 
   const fillsTank = TANK_IDS.some((id) => {
     const s = tanks[id];
-    return s && (s.percentUsed != null || s.spendUsd != null || s.mixCents);
+    return s && (s.percentUsed != null || s.spendUsd != null || s.mixCents || s.tokenTotals);
   });
 
   return { surface, tanks, notes, fillsTank, planHint, onDemandDisabled };

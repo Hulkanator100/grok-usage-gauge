@@ -18,6 +18,7 @@ Chrome often leaves `usage-events-*.csv.crdownload` at **0 bytes**. The gauge re
 | CUA / computer | Same weekly pool; no per-session export | Settings Usage or mix cents `grok-bot-cua` | Bot week |
 | MCP / plugins | Same weekly pool; Marketplace is not a ledger | Settings Usage | Bot week |
 | cursor.com/dashboard/spending | Separate Cursor Models % and Other Models % + on-demand cap | **Best screenshot for tanks 2–4** | Cursor / Other / on-demand |
+| cursor.com/dashboard/usage (this page) | Token cards + chart (1d/7d/MTD). Not tank %. Table Cost is often Included/Free. | Screenshot is ingested as tokens + on-demand 0 in that window. **Export CSV** for $. | Token context; on-demand $0 if the On-demand card is 0. Not Bot-week reset. |
 | dashboard/usage CSV | Per-event Kind, Model, tokens, Cost. Headers matched by name; extra Cloud Agent ID / Automation ID / User ok. Included grok-bot-* → Bot mix cents (not Cursor Models). composer / grok-4.6 / grok-4.5 → Cursor Models spend. claude/gpt → Other Models. Usage-based/On-Demand Kind → on-demand $. Cost Included/Free/- = $0 charged. | Finished `.csv` (file picker accepts `.csv,.crdownload`) or paste | Spend on all four tanks; Other Models / on-demand % from plan/cap; Bot/Cursor Models stay spend-only unless % is known. Daily cumulative readings for 2+ burn. |
 | Editor usage chip | Cursor-app % (not grok-bot-* rows) | Screenshot of meters / limit toast | Cursor / Other |
 | CLI `/usage` | Auto/API included meters, on-demand vs limit, reset | Screenshot or copied `/usage` | Cursor month |

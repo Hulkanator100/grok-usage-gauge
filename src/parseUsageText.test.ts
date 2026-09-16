@@ -124,6 +124,72 @@ product split`,
   });
 });
 
+describe("Cursor dashboard Usage token chart", () => {
+  it("ingests Total/Included/On-demand tokens without treating them as tank %", () => {
+    const text = `Usage
+Sep 10 - Sep 16
+Total tokens
+108.1M
+Included
+104.3M
+On-demand
+0
+Your usage per day across this billing period
+Cumulative Tokens
+Group By Model
+Export CSV
+Date (UTC) Type Model Tokens Cost
+cursor-grok-4.6-high-fast
+cursor-grok-4.6-medium
+claude-4.5-sonnet
+gemini-3.1-pro
+Spending
+Pro+`;
+    const p = parseUsageText(text, CAPTURE);
+    expect(p.surface).toBe("cursor-usage-dashboard");
+    expect(p.fillsTank).toBe(true);
+    expect(p.planHint).toBe("proPlus");
+    expect(p.tanks.cursorModelsMonthly?.tokenTotals?.total).toBeCloseTo(104.3e6);
+    expect(p.tanks.cursorModelsMonthly?.percentUsed).toBeUndefined();
+    expect(p.tanks.onDemandMonthly?.tokenTotals?.total).toBe(0);
+    expect(p.tanks.onDemandMonthly?.spendUsd).toBe(0);
+    expect(p.notes.join(" ")).toMatch(/not Spending %/i);
+    expect(p.notes.join(" ")).toMatch(/claude-4.5-sonnet/);
+  });
+
+  it("reads OCR that puts Total tokens Included On-demand on one line then 108.1M 104.3M 0", () => {
+    const ocr = `@ Overview Usage
+Sep10-Sep16 1d 7d 30d MTD Lastmonth
+Total tokens Included On-demand
+8 Plugins & MCPs
+. 108.1M 104.3M 0
+Your usage per day across this billing period
+Export CSV
+Date (UTC) Type Model Tokens Cost
+cursor-grok-4.6-high-fast cursor-grok-4.6-medium claude-4.5-sonnet
+Pro+`;
+    const p = parseUsageText(ocr, CAPTURE);
+    expect(p.surface).toBe("cursor-usage-dashboard");
+    expect(p.tanks.onDemandMonthly?.spendUsd).toBe(0);
+    expect(p.tanks.onDemandMonthly?.tokenTotals?.total).toBe(0);
+    expect(p.tanks.cursorModelsMonthly?.tokenTotals?.total).toBeCloseTo(104.3e6);
+    expect(p.tanks.cursorModelsMonthly?.percentUsed).toBeUndefined();
+  });
+
+  it("does not 403-style fail paste of the Usage chart", () => {
+    const text = `Total tokens 108.1M
+Included 104.3M
+On-demand 0
+Your usage per day
+Export CSV
+Date (UTC)
+cursor-grok-4.6-medium`;
+    const readings = parsePaste(text, CAPTURE);
+    expect(readings[0]?.surface).toBe("cursor-usage-dashboard");
+    expect(readings[0]?.tanks.onDemandMonthly?.spendUsd).toBe(0);
+  });
+});
+
 describe("paste of screenshot-like text", () => {
   it("saves a Bot-week reading from unstructured Usage text", () => {
     const [r] = parsePaste(`Weekly usage 40%\nResets in 4 days\nBilled through Cursor\nOn-demand $0 of $0`);

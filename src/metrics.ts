@@ -124,7 +124,7 @@ export interface TankMetrics {
   acceleration?: AccelerationWarning;
   hardStop: boolean;
   mixCents?: Record<string, number | undefined>;
-  tokenTotals?: { input?: number; output?: number; cacheRead?: number };
+  tokenTotals?: { input?: number; output?: number; cacheRead?: number; total?: number };
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -138,7 +138,7 @@ export function computeTankMetrics(args: {
     spendUsd?: number;
     capUsd?: number;
     mixCents?: Record<string, number | undefined>;
-    tokenTotals?: { input?: number; output?: number; cacheRead?: number };
+    tokenTotals?: { input?: number; output?: number; cacheRead?: number; total?: number };
   } }>;
   now: Date;
   fallbackCapUsd?: number;
