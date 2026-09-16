@@ -9,6 +9,24 @@ describe("analog fuel needle", () => {
     expect(fuelNeedleDeg(100)).toBe(-90);
     expect(fuelNeedleDeg(50)).toBe(0);
   });
+
+  it("draws a red pointer whose rotation follows remaining fuel", () => {
+    const html = renderApp({
+      readings: buildExampleWeek(new Date("2026-09-16T18:00:00Z")),
+      settings: DEFAULT_SETTINGS,
+      paste: "",
+      capturedAtLocal: "2026-09-16T18:00",
+    });
+    expect(html).toContain('class="needle"');
+    expect(html).toContain('fill="#e10600"');
+    const needles = [...html.matchAll(/class="needle-g" transform="rotate\(([-0-9.]+) 100 100\)"/g)].map((m) =>
+      Number(m[1]),
+    );
+    expect(needles).toHaveLength(4);
+    expect(needles[0]).toBeCloseTo(fuelNeedleDeg(67.9), 1);
+    expect(needles[3]).toBeCloseTo(90, 1);
+    expect(needles[0]).toBeLessThan(needles[1]);
+  });
 });
 
 describe("history instrument", () => {

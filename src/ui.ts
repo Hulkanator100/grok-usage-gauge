@@ -262,17 +262,19 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
             <circle class="bezel" cx="100" cy="100" r="96" fill="url(#bezel-${tank})"/>
             <circle class="face" cx="100" cy="100" r="86" fill="#050505"/>
             <circle class="rim-glow" cx="100" cy="100" r="82" fill="none" stroke="#e8a017" stroke-width="2.2" opacity="0.9"/>
+            <path class="empty-zone" d="M32,100 A68,68 0 0 1 44,56" fill="none"/>
             <g class="ticks" stroke="#f4f4f4" stroke-linecap="round">${fuelTicks()}</g>
             <text class="mark-e" x="38" y="118">E</text>
             <text class="mark-f" x="162" y="118">F</text>
             <text class="mark-half" x="100" y="52">½</text>
-            <g class="needle-g" transform="rotate(${needle} 100 100)">
-              <line class="needle" x1="100" y1="112" x2="100" y2="36" filter="url(#glow-${tank})"/>
-            </g>
-            <circle class="hub" cx="100" cy="100" r="11" fill="#141414" stroke="#2a2a2a" stroke-width="2"/>
-            <circle class="hub-eye" cx="100" cy="100" r="3.5" fill="#3a3a3a"/>
             <circle class="glass" cx="100" cy="100" r="86" fill="url(#glass-${tank})"/>
             <text class="fuel-word" x="100" y="168">FUEL</text>
+            <g class="needle-g" transform="rotate(${needle.toFixed(1)} 100 100)">
+              <polygon class="needle-shadow" points="100,26 107,106 100,118 93,106"/>
+              <polygon class="needle" fill="#e10600" stroke="#ff4d4d" points="100,24 106.5,104 100,114 93.5,104"/>
+              <circle class="hub" cx="100" cy="100" r="11"/>
+              <circle class="hub-eye" fill="#e10600" cx="100" cy="100" r="4"/>
+            </g>
           </svg>
         </div>
         <div class="used-readout">${fmtPct(m.percentUsed)} used</div>
