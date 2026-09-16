@@ -167,7 +167,7 @@ function chartWash(id: string, w: number, h: number): string {
       <stop offset="100%" stop-color="#000000"/>
     </linearGradient>
     <radialGradient id="${id}-amber" cx="50%" cy="0%" r="80%">
-      <stop offset="0%" stop-color="rgba(232,160,23,0.22)"/>
+      <stop offset="0%" stop-color="rgba(232,160,23,0.38)"/>
       <stop offset="58%" stop-color="rgba(232,160,23,0)"/>
     </radialGradient>
     <radialGradient id="${id}-star" cx="100%" cy="100%" r="70%">
@@ -384,7 +384,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
                 <stop offset="100%" stop-color="#000000"/>
               </linearGradient>
               <radialGradient id="face-amber-${tank}" cx="50%" cy="8%" r="85%">
-                <stop offset="0%" stop-color="rgba(232,160,23,0.28)"/>
+                <stop offset="0%" stop-color="rgba(232,160,23,0.42)"/>
                 <stop offset="58%" stop-color="rgba(232,160,23,0)"/>
               </radialGradient>
               <radialGradient id="face-star-${tank}" cx="92%" cy="92%" r="70%">
