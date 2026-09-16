@@ -157,7 +157,30 @@ function fmtAxis(t: number): string {
   return new Date(t).toLocaleString(undefined, { month: "short", day: "numeric" });
 }
 
-function renderSpark(points: HistoryPoint[]): string {
+function chartWash(id: string, w: number, h: number): string {
+  const rw = (w - 1).toFixed(1);
+  const rh = (h - 1).toFixed(1);
+  return `<defs>
+    <linearGradient id="${id}-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#242424"/>
+      <stop offset="42%" stop-color="#161616"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+    <radialGradient id="${id}-amber" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="rgba(232,160,23,0.22)"/>
+      <stop offset="58%" stop-color="rgba(232,160,23,0)"/>
+    </radialGradient>
+    <radialGradient id="${id}-star" cx="100%" cy="100%" r="70%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.10)"/>
+      <stop offset="52%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+  </defs>
+  <rect class="spark-face" x="0.5" y="0.5" width="${rw}" height="${rh}" fill="url(#${id}-body)"/>
+  <rect class="spark-wash" x="0.5" y="0.5" width="${rw}" height="${rh}" fill="url(#${id}-amber)"/>
+  <rect class="spark-wash" x="0.5" y="0.5" width="${rw}" height="${rh}" fill="url(#${id}-star)"/>`;
+}
+
+function renderSpark(points: HistoryPoint[], washId = "spark"): string {
   if (points.length < 2) {
     return `<p class="spark-idle">History graph needs 2+ readings</p>`;
   }
@@ -165,7 +188,7 @@ function renderSpark(points: HistoryPoint[]): string {
   const h = 52;
   const d = polylineRemaining(points, w, h);
   return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="Remaining fuel over time">
-    <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" class="spark-face"/>
+    ${chartWash(washId, w, h)}
     <path d="${d}" class="spark-line" fill="none"/>
   </svg>`;
 }
@@ -186,7 +209,7 @@ function renderTankHistoryPanel(tank: TankId, points: HistoryPoint[]): string {
   return `<article class="instrument-card">
     <h3>${meta.title}</h3>
     <svg class="trace" viewBox="0 0 ${w} ${h}" role="img" aria-label="${meta.title} remaining over the captured period">
-      <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" class="spark-face"/>
+      ${chartWash(`trace-${tank}`, w, h)}
       <text class="axis-y" x="14" y="22">F</text>
       <text class="axis-y" x="14" y="${h - 10}">E</text>
       <path d="${d}" class="spark-line" fill="none"/>
@@ -234,7 +257,7 @@ function renderOverlay(readings: Reading[], settings: AppSettings, ids: readonly
   return `
     <div class="overlay-wrap">
       <svg class="trace overlay" viewBox="0 0 ${w} ${h}" role="img" aria-label="${aria}">
-        <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" class="spark-face"/>
+        ${chartWash(`overlay-${ids[0]}`, w, h)}
         <text class="axis-y" x="14" y="28">F</text>
         <text class="axis-y" x="14" y="${h - 14}">E</text>
         ${traces}
@@ -276,7 +299,7 @@ function renderEstimatePanel(e: TankEstimate): string {
   const spark =
     e.samples.length >= 2
       ? `<svg class="spark" viewBox="0 0 200 52" role="img" aria-label="Estimated unpublished metric over time">
-      <rect x="0.5" y="0.5" width="199" height="51" class="spark-face"/>
+      ${chartWash(`est-${e.tank}`, 200, 52)}
       <path d="${polylineValues(e.samples, 200, 52)}" class="spark-line" fill="none"/>
     </svg>`
       : `<p class="spark-idle">Need 2+ samples for a trend line</p>`;
@@ -355,13 +378,28 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
                 <stop offset="42%" stop-color="rgba(0,0,0,0)"/>
                 <stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
               </radialGradient>
+              <linearGradient id="face-body-${tank}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#242424"/>
+                <stop offset="42%" stop-color="#161616"/>
+                <stop offset="100%" stop-color="#000000"/>
+              </linearGradient>
+              <radialGradient id="face-amber-${tank}" cx="50%" cy="8%" r="85%">
+                <stop offset="0%" stop-color="rgba(232,160,23,0.28)"/>
+                <stop offset="58%" stop-color="rgba(232,160,23,0)"/>
+              </radialGradient>
+              <radialGradient id="face-star-${tank}" cx="92%" cy="92%" r="70%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.12)"/>
+                <stop offset="52%" stop-color="rgba(255,255,255,0)"/>
+              </radialGradient>
               <filter id="glow-${tank}" x="-50%" y="-50%" width="200%" height="200%">
                 <feGaussianBlur stdDeviation="1.6" result="b"/>
                 <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
               </filter>
             </defs>
             <circle class="bezel" cx="100" cy="100" r="96" fill="url(#bezel-${tank})"/>
-            <circle class="face" cx="100" cy="100" r="86" fill="#050505"/>
+            <circle class="face" cx="100" cy="100" r="86" fill="url(#face-body-${tank})"/>
+            <circle class="face-wash" cx="100" cy="100" r="86" fill="url(#face-amber-${tank})"/>
+            <circle class="face-wash" cx="100" cy="100" r="86" fill="url(#face-star-${tank})"/>
             <circle class="rim-glow" cx="100" cy="100" r="82" fill="none" stroke="#e8a017" stroke-width="2.2" opacity="0.9"/>
             <path class="empty-zone" d="M32,100 A68,68 0 0 1 44,56" fill="none"/>
             <g class="ticks" stroke="#f4f4f4" stroke-linecap="round">${fuelTicks()}</g>
@@ -379,7 +417,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
           </svg>
         </div>
         ${gaugeReadout(m)}
-        ${renderSpark(points)}
+        ${renderSpark(points, `spark-${tank}`)}
       </div>
       <dl class="metrics">
         <div class="metric"><span>Remaining</span><strong>${fmtPct(m.remainingPct)}</strong>${

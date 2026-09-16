@@ -8,6 +8,16 @@
   --hair: #2a2a2a;
   --amber: #e8a017;
   --amber-hot: #ffb020;
+  --wash-amber: rgba(232, 160, 23, 0.16);
+  --wash-star: rgba(255, 255, 255, 0.08);
+  --surface:
+    radial-gradient(ellipse 90% 55% at 50% -8%, var(--wash-amber), transparent 58%),
+    radial-gradient(ellipse 70% 50% at 100% 110%, var(--wash-star), transparent 52%),
+    linear-gradient(180deg, var(--void-lift) 0%, var(--void-mid) 42%, var(--void) 100%);
+  --surface-inset:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(232, 160, 23, 0.10), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 100% 120%, rgba(255, 255, 255, 0.05), transparent 50%),
+    linear-gradient(180deg, #1c1c1c 0%, #101010 50%, #000000 100%);
   font-family: system-ui, "Segoe UI", sans-serif;
 }
 
@@ -41,7 +51,7 @@ body {
   width: 1.35rem;
   height: 1.35rem;
   border-radius: 50%;
-  background: #000;
+  background: var(--surface);
   border: 1.5px solid var(--amber);
   box-shadow: 0 0 14px 2px rgba(232, 160, 23, 0.45);
   margin-bottom: 0.85rem;
@@ -103,7 +113,7 @@ a { color: var(--amber); }
 }
 
 .tank-card {
-  background: var(--void);
+  background: var(--surface);
   border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 1rem;
@@ -181,6 +191,8 @@ a { color: var(--amber); }
   stroke-linecap: round;
 }
 
+.fuel-gauge .face-wash { pointer-events: none; }
+
 .fuel-gauge .needle-shadow {
   fill: rgba(0, 0, 0, 0.55);
 }
@@ -245,7 +257,7 @@ a { color: var(--amber); }
 .accel-warn {
   margin-top: 0.75rem;
   padding: 0.7rem 0.75rem;
-  background: var(--void);
+  background: var(--surface-inset);
   border: 1px solid var(--amber);
   border-radius: 2px;
   color: var(--ink);
@@ -268,7 +280,7 @@ a { color: var(--amber); }
 }
 
 .panel {
-  background: var(--void);
+  background: var(--surface);
   border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 1rem;
@@ -286,7 +298,7 @@ a { color: var(--amber); }
   padding: 0.85rem 0.9rem 1rem;
   border: 1px solid var(--hair);
   border-radius: 2px;
-  background: linear-gradient(180deg, var(--void-lift) 0%, var(--void) 100%);
+  background: var(--surface-inset);
 }
 .control-block h3 {
   margin: 0 0 0.35rem;
@@ -377,7 +389,7 @@ label {
 
 textarea, input, select {
   width: 100%;
-  background: var(--void);
+  background: var(--surface-inset);
   color: var(--ink);
   border: 1px solid var(--hair);
   border-radius: 2px;
@@ -426,7 +438,7 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
   border-radius: 2px;
   padding: 0.9rem;
   margin: 0.8rem 0;
-  background: var(--void);
+  background: var(--surface-inset);
 }
 .drop-zone.drag {
   border-color: var(--amber);
@@ -447,14 +459,14 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
   padding: 0.75rem 0.85rem;
   border: 1px solid var(--hair);
   border-radius: 2px;
-  background: var(--void);
+  background: var(--surface-inset);
 }
 .ingest-banner {
   margin: 0.9rem 0 0;
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--hair);
   border-radius: 2px;
-  background: var(--void);
+  background: var(--surface);
   color: var(--ink);
   line-height: 1.4;
 }
@@ -466,7 +478,7 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
   padding: 0.65rem 0.85rem;
   border-radius: 2px;
   border: 1px solid var(--hair);
-  background: var(--void);
+  background: var(--surface);
   color: var(--dim);
   font-size: 0.88rem;
   line-height: 1.4;
@@ -484,7 +496,7 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
   overflow: auto;
   white-space: pre-wrap;
   font-size: 0.78rem;
-  background: #000;
+  background: var(--surface-inset);
   padding: 0.6rem;
   border-radius: 2px;
   border: 1px solid var(--hair);
@@ -498,7 +510,7 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
 }
 @media (max-width: 800px) { .surface-grid { grid-template-columns: 1fr; } }
 .surface-card {
-  background: var(--void);
+  background: var(--surface);
   border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 0.8rem 0.9rem;
@@ -515,6 +527,12 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
   color: var(--amber);
   margin-top: 0.45rem;
 }
+.history ol {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  padding: 0.7rem 1.1rem 0.85rem 2rem;
+}
 .history li { margin: 0.45rem 0; color: var(--dim); }
 .history span { display: inline-block; margin-right: 0.7rem; color: var(--ink); }
 
@@ -523,7 +541,8 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
   height: 52px;
   display: block;
 }
-.spark-face { fill: #000; stroke: var(--hair); }
+.spark-face { stroke: var(--hair); }
+.spark-wash { pointer-events: none; }
 .spark-line { stroke: var(--amber); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .spark-idle {
   margin: 0;
@@ -559,7 +578,7 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
   color: var(--ink);
 }
 .instrument-card {
-  background: var(--void);
+  background: var(--surface);
   border: 1px solid var(--hair);
   border-radius: 2px;
   padding: 0.75rem 0.8rem 0.85rem;

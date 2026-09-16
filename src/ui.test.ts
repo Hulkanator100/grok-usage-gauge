@@ -21,7 +21,9 @@ describe("analog fuel needle", () => {
     expect(html).toContain("remain-line");
     expect(html).toContain(" remaining");
     expect(html).toContain(" used");
-    expect(html).toContain('fill="#e10600"');
+    expect(html).toContain('fill="url(#face-body-grokBotWeekly)"');
+    expect(html).toContain("face-amber-");
+    expect(html).toContain("spark-wash");
     const needles = [...html.matchAll(/class="needle-g" transform="rotate\(([-0-9.]+) 100 100\)"/g)].map((m) =>
       Number(m[1]),
     );
@@ -44,6 +46,20 @@ describe("analog fuel needle", () => {
     expect(html).toContain("remain-line");
     expect(html).toContain("— remaining");
     expect(html).toContain("— used");
+  });
+
+  it("paints gauge faces and spark plots with the page charcoal-amber wash", () => {
+    const html = renderApp({
+      readings: buildExampleWeek(new Date("2026-09-16T18:00:00Z")),
+      settings: DEFAULT_SETTINGS,
+      paste: "",
+      capturedAtLocal: "2026-09-16T18:00",
+    });
+    expect(html).toContain('fill="url(#face-body-grokBotWeekly)"');
+    expect(html).toContain("face-amber-grokBotWeekly");
+    expect(html).toContain("face-star-grokBotWeekly");
+    expect(html).toContain("spark-wash");
+    expect(html).toContain("id=\"spark-grokBotWeekly-amber\"");
   });
 });
 
