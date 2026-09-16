@@ -17,6 +17,8 @@ if (!existsSync(worker)) {
 }
 
 cpSync(worker, resolve(dest, "worker.min.js"));
+const esm = resolve(root, "node_modules/tesseract.js/dist/tesseract.esm.min.js");
+if (existsSync(esm)) cpSync(esm, resolve(dest, "tesseract.esm.min.js"));
 
 for (const f of [
   "tesseract-core-lstm.wasm.js",

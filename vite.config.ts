@@ -24,4 +24,7 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     environment: "node",
   },
+  optimizeDeps: {
+    exclude: ["tesseract.js", "tesseract.js-core"],
+  },
 });

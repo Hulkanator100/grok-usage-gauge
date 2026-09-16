@@ -65,12 +65,14 @@ async function thumbnail(file: File): Promise<string | undefined> {
   }
 }
 
+function ocrAsset(name: string): string {
+  return new URL(`tesseract/${name}`, document.baseURI).href;
+}
+
 function sameOriginOcrOptions() {
-  const base = new URL("tesseract/", window.location.href).href;
+  const base = ocrAsset("");
   return {
     logger: () => undefined,
-    // Same-origin worker (not a blob: URL). Edge Tracking Prevention often blocks
-    // jsDelivr + blob workers; Cursor’s Simple Browser does not.
     workerBlobURL: false as const,
     workerPath: `${base}worker.min.js`,
     corePath: `${base}core`,
@@ -80,17 +82,28 @@ function sameOriginOcrOptions() {
   };
 }
 
-export async function ocrImage(file: File): Promise<string> {
-  const Tesseract = await import("tesseract.js");
-  const local = sameOriginOcrOptions();
-  try {
-    const result = await Tesseract.recognize(file, "eng", local);
-    return result.data.text ?? "";
-  } catch (first) {
-    const result = await Tesseract.recognize(file, "eng", { logger: () => undefined });
-    if (!result.data.text) throw first;
-    return result.data.text;
+type TessApi = { recognize: (image: File, langs: string, opts: ReturnType<typeof sameOriginOcrOptions>) => Promise<{ data: { text?: string } }> };
+
+async function loadTesseract(): Promise<TessApi> {
+  const href = ocrAsset("tesseract.esm.min.js");
+  const probe = await fetch(href, { cache: "no-store" });
+  if (!probe.ok) {
+    throw new Error(
+      `OCR files missing (${href} → ${probe.status}). Stop the server, run npm install, then npm run dev, and hard-refresh Edge (Ctrl+Shift+R).`,
+    );
   }
+  const mod = (await import(/* @vite-ignore */ href)) as { default?: TessApi } & TessApi;
+  const api = mod.default ?? mod;
+  if (typeof api.recognize !== "function") {
+    throw new Error("OCR module loaded but recognize() is missing.");
+  }
+  return api;
+}
+
+export async function ocrImage(file: File): Promise<string> {
+  const Tesseract = await loadTesseract();
+  const result = await Tesseract.recognize(file, "eng", sameOriginOcrOptions());
+  return result.data.text ?? "";
 }
 
 export async function ingestFile(file: File, capturedAt: string): Promise<IngestResult> {
