@@ -108,22 +108,73 @@ function warnBlock(m: TankMetrics, tank: TankId): string {
   </div>`;
 }
 
+export function fuelNeedleDeg(percentUsed: number | undefined): number {
+  const remaining = percentUsed == null ? 50 : Math.max(0, Math.min(100, 100 - percentUsed));
+  return -90 + (remaining / 100) * 180;
+}
+
+function fuelTicks(): string {
+  const ticks: string[] = [];
+  const n = 8;
+  for (let i = 0; i <= n; i++) {
+    const remaining = i / n;
+    const deg = -90 + remaining * 180;
+    const rad = (deg * Math.PI) / 180;
+    const inner = i === 0 || i === n || i === n / 2 ? 58 : 62;
+    const outer = 74;
+    const x1 = 100 + inner * Math.sin(rad);
+    const y1 = 100 - inner * Math.cos(rad);
+    const x2 = 100 + outer * Math.sin(rad);
+    const y2 = 100 - outer * Math.cos(rad);
+    ticks.push(`<line class="tick${i % 2 === 0 ? " major" : ""}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" />`);
+  }
+  return ticks.join("");
+}
+
 export function renderTankCard(tank: TankId, m: TankMetrics): string {
   const meta = TANK_META[tank];
-  const used = m.percentUsed ?? 0;
-  const fill = Math.max(0, Math.min(100, used));
-  const remainingVisual = Math.max(0, 100 - fill);
+  const known = m.percentUsed != null;
+  const needle = fuelNeedleDeg(m.percentUsed);
   return `
     <article class="tank-card ${fillClass(m.percentUsed)}" data-tank="${tank}">
       <header>
         <h2>${meta.title}</h2>
         <p class="clock">${meta.clock}</p>
       </header>
-      <div class="tank-visual" aria-hidden="true">
-        <div class="tank-cylinder">
-          <div class="liquid" style="height:${fill}%"></div>
-          <div class="air" style="height:${remainingVisual}%"></div>
-          <div class="marks"></div>
+      <div class="tank-visual">
+        <div class="fuel-gauge ${known ? "" : "unknown-needle"}" style="--needle:${needle}deg">
+          <svg viewBox="0 0 200 200" role="img" aria-label="${meta.title} ${fmtPct(m.percentUsed)} used">
+            <defs>
+              <linearGradient id="bezel-${tank}" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#6a6a6a"/>
+                <stop offset="45%" stop-color="#1a1a1a"/>
+                <stop offset="100%" stop-color="#8a8a8a"/>
+              </linearGradient>
+              <radialGradient id="glass-${tank}" cx="38%" cy="28%" r="70%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.16)"/>
+                <stop offset="42%" stop-color="rgba(0,0,0,0)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
+              </radialGradient>
+              <filter id="glow-${tank}" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="1.6" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <circle class="bezel" cx="100" cy="100" r="96" fill="url(#bezel-${tank})"/>
+            <circle class="face" cx="100" cy="100" r="86" fill="#050505"/>
+            <circle class="rim-glow" cx="100" cy="100" r="82" fill="none" stroke="#f5a31a" stroke-width="2.2" opacity="0.85"/>
+            <g class="ticks" stroke="#f4f4f4" stroke-linecap="round">${fuelTicks()}</g>
+            <text class="mark-e" x="38" y="118">E</text>
+            <text class="mark-f" x="162" y="118">F</text>
+            <text class="mark-half" x="100" y="52">½</text>
+            <g class="needle-g" transform="rotate(${needle} 100 100)">
+              <line class="needle" x1="100" y1="112" x2="100" y2="36" filter="url(#glow-${tank})"/>
+            </g>
+            <circle class="hub" cx="100" cy="100" r="11" fill="#141414" stroke="#2a2a2a" stroke-width="2"/>
+            <circle class="hub-eye" cx="100" cy="100" r="3.5" fill="#3a3a3a"/>
+            <circle class="glass" cx="100" cy="100" r="86" fill="url(#glass-${tank})"/>
+            <text class="fuel-word" x="100" y="168">FUEL</text>
+          </svg>
         </div>
         <div class="used-readout">${fmtPct(m.percentUsed)} used</div>
       </div>
