@@ -1,5 +1,7 @@
 import type { MixCents, Reading, TankId, TankSnapshot, TokenTotals } from "./types";
 import { TANK_IDS } from "./types";
+import { looksLikeUsageEventsCsv, parseUsageEventsCsv } from "./parseUsageCsv";
+import { parseUsageText, readingFromParsed } from "./parseUsageText";
 
 const TANK_ALIASES: Array<{ id: TankId; patterns: RegExp[] }> = [
   {
@@ -286,16 +288,26 @@ export function parsePaste(input: string, capturedAt = new Date().toISOString())
     }
   } catch (err) {
     if (err instanceof SyntaxError) {
-      // fall through to text
+      // fall through to CSV / text
     } else {
       throw err;
     }
   }
 
+  if (looksLikeUsageEventsCsv(trimmed)) {
+    return parseUsageEventsCsv(trimmed, { source: "paste" });
+  }
+
+  const fromScreen = parseUsageText(trimmed, capturedAt);
+  if (fromScreen.fillsTank) {
+    return [readingFromParsed(fromScreen, capturedAt, trimmed, "paste")];
+  }
+
   const reading = parseTextPaste(trimmed, capturedAt);
   if (!TANK_IDS.some((id) => reading.tanks[id] && hasAny(reading.tanks[id]!))) {
     throw new Error(
-      "Could not find tank figures. Include Grok Bot / Cursor Models / Other Models / On-demand sections with % used, reset, and optional $.",
+      fromScreen.notes[0] ??
+        "Could not find tank figures. Drop a screenshot of Grok Bot Settings → Usage or cursor.com/dashboard/spending, or paste % used, reset, and optional $.",
     );
   }
   return [reading];

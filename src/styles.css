@@ -206,6 +206,42 @@ button.danger { background: #6b2a22; color: #ffd8d1; }
 .error { color: #ffb4a8; }
 .notice { color: var(--accent); }
 
-.history ol { padding-left: 1.2rem; color: var(--muted); }
+.drop-zone {
+  border: 1px dashed var(--accent);
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin: 0.8rem 0;
+  background: #151910;
+}
+.drop-zone.drag {
+  background: #2a331c;
+}
+.drop-zone p { color: var(--muted); font-size: 0.85rem; margin: 0.35rem 0 0.6rem; }
+.thumb { max-height: 48px; vertical-align: middle; border-radius: 4px; margin-left: 0.4rem; }
+.notes { font-size: 0.8rem; margin-top: 0.2rem; }
+.surface-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+@media (max-width: 800px) { .surface-grid { grid-template-columns: 1fr; } }
+.surface-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.surface-card h3 { margin: 0 0 0.4rem; color: var(--ink); font-size: 0.95rem; }
+.surface-card[data-fills="false"] { opacity: 0.92; }
+.surface-card span {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  color: var(--accent);
+  margin-top: 0.45rem;
+}
 .history li { margin: 0.45rem 0; }
 .history span { display: inline-block; margin-right: 0.7rem; }

@@ -153,10 +153,13 @@ export function computeTankMetrics(args: {
   const capUsd = snap.capUsd ?? args.fallbackCapUsd;
   const hardStop = args.kind === "cap" && capUsd === 0;
 
-  let percentUsed = snap.percentUsed;
-  if (percentUsed == null && args.kind === "cap" && capUsd != null && capUsd > 0 && snap.spendUsd != null) {
-    percentUsed = (snap.spendUsd / capUsd) * 100;
-  }
+  const derivePctFromCap = (kind: typeof args.kind, cap: number | undefined, spend: number | undefined) => {
+    if (spend == null || cap == null || cap <= 0) return undefined;
+    if (kind === "cap" || kind === "month") return (spend / cap) * 100;
+    return undefined;
+  };
+
+  let percentUsed = snap.percentUsed ?? derivePctFromCap(args.kind, capUsd, snap.spendUsd);
   if (hardStop) {
     percentUsed = (snap.spendUsd ?? 0) > 0 ? 100 : 0;
   }
@@ -177,11 +180,8 @@ export function computeTankMetrics(args: {
 
   const points: Point[] = [];
   for (const row of ordered) {
-    let p = row.snap.percentUsed;
-    if (p == null && args.kind === "cap") {
-      const cap = row.snap.capUsd ?? capUsd;
-      if (cap != null && cap > 0 && row.snap.spendUsd != null) p = (row.snap.spendUsd / cap) * 100;
-    }
+    const cap = row.snap.capUsd ?? capUsd;
+    const p = row.snap.percentUsed ?? derivePctFromCap(args.kind, cap, row.snap.spendUsd);
     if (p == null) continue;
     points.push({ t: new Date(row.capturedAt).getTime(), p });
   }

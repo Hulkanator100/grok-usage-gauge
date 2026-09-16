@@ -41,12 +41,32 @@ export interface TankSnapshot {
   tokenTotals?: TokenTotals;
 }
 
+export type ReadingSource =
+  | "paste"
+  | "example"
+  | "accelerating-example"
+  | "screenshot"
+  | "drop"
+  | "csv"
+  | "csv-sample";
+
+export interface DropMeta {
+  fileName: string;
+  mime: string;
+  previewDataUrl?: string;
+  byteLength?: number;
+  unfinishedChromeDownload?: boolean;
+}
+
 export interface Reading {
   id: string;
   capturedAt: string;
   tanks: Partial<Record<TankId, TankSnapshot>>;
-  source: "paste" | "example" | "accelerating-example";
+  source: ReadingSource;
   rawPaste?: string;
+  surface?: string;
+  notes?: string[];
+  drop?: DropMeta;
 }
 
 export interface AppSettings {

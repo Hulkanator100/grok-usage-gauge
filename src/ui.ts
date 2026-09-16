@@ -1,3 +1,4 @@
+import { SURFACE_GUIDE } from "./surfaces";
 import { computeTankMetrics, otherModelsCapUsd, type TankMetrics } from "./metrics";
 import type { AppSettings, Reading, TankId } from "./types";
 import { TANK_IDS, TANK_META } from "./types";
@@ -145,6 +146,7 @@ export function renderApp(args: {
   capturedAtLocal: string;
   notice?: string;
   error?: string;
+  busy?: string;
 }): string {
   const now = new Date();
   const cards = TANK_IDS.map((id) => renderTankCard(id, metricsForTank(args.readings, id, args.settings, now))).join(
@@ -161,7 +163,7 @@ export function renderApp(args: {
         const pct = s.percentUsed != null ? `${s.percentUsed.toFixed(1)}%` : s.spendUsd != null ? fmtUsd(s.spendUsd) : "·";
         return `<span>${TANK_META[id].title}: ${pct}</span>`;
       }).join("");
-      return `<li><time datetime="${r.capturedAt}">${fmtWhen(new Date(r.capturedAt))}</time> <code>${r.source}</code> ${bits}</li>`;
+      return `<li><time datetime="${r.capturedAt}">${fmtWhen(new Date(r.capturedAt))}</time> <code>${r.source}${r.surface ? ` · ${r.surface}` : ""}</code> ${r.drop ? `<em>${escapeHtml(r.drop.fileName)}</em>` : ""} ${r.drop?.previewDataUrl ? `<img class="thumb" alt="" src="${r.drop.previewDataUrl}" />` : ""} ${bits}${r.notes?.length ? `<div class="notes">${r.notes.map(escapeHtml).join(" ")}</div>` : ""}</li>`;
     })
     .join("");
 
@@ -169,7 +171,7 @@ export function renderApp(args: {
     <header class="masthead">
       <p class="eyebrow">Local · four tanks · never one bar</p>
       <h1>Grok Usage Gauge</h1>
-      <p class="lede">Paste figures from <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. Readings stay in this browser’s localStorage. This is not a Grok Bot that polls usage, and it never asks for API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
+      <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills spend (mix cents for grok-bot-*); Bot/Cursor Models stay spend-only unless % is known; Other Models / on-demand % use plan/cap. Chrome <code>.crdownload</code> leftovers are empty — re-export. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
     </header>
 
     <section class="bay">
@@ -184,8 +186,14 @@ export function renderApp(args: {
         <label>Captured at
           <input id="captured-at" type="datetime-local" value="${args.capturedAtLocal}" />
         </label>
-        <label>Paste (JSON or dashboard text)
-          <textarea id="paste" rows="16" placeholder="Grok Bot weekly 41% used…">${escapeHtml(args.paste)}</textarea>
+        <div id="drop-zone" class="drop-zone" tabindex="0">
+          <strong>Drop screenshots or usage files</strong>
+          <p>png / jpg / webp, copied <code>/usage</code> text, Settings → Usage, Spending, or a finished usage-events <code>.csv</code> (accepts <code>.csv,.crdownload</code>). Paste CSV in the box too. Empty Chrome <code>.crdownload</code> files are rejected. Paste an image with Ctrl+V.</p>
+          <input id="file-input" type="file" accept=".csv,.crdownload,text/csv,image/*,.txt,.md,.json,.log" multiple />
+        </div>
+        ${args.busy ? `<p class="notice" role="status">${escapeHtml(args.busy)}</p>` : ""}
+        <label>Paste (JSON, dashboard text, CLI /usage, or OCR text)
+          <textarea id="paste" rows="14" placeholder="Drop a screenshot or paste Weekly usage 61%…">${escapeHtml(args.paste)}</textarea>
         </label>
         <div class="row">
           <button type="button" id="save-paste">Save pasted reading</button>
@@ -200,6 +208,7 @@ export function renderApp(args: {
         <div class="row">
           <button type="button" id="load-example">Load example week</button>
           <button type="button" id="load-accel">Load accelerating week</button>
+          <button type="button" id="load-sample-csv">Load bundled usage-events CSV</button>
           <button type="button" id="clear-data" class="danger">Clear local data</button>
         </div>
         <label>Cursor plan (Other Models included $)
@@ -221,6 +230,21 @@ export function renderApp(args: {
           <li>Do not lead with message counts (retired). Tab completions are not a tank.</li>
           <li>Charge order: Bot week → promo credits → paid on-demand.</li>
         </ul>
+      </div>
+    </section>
+
+    <section class="surfaces">
+      <h2>How each surface reports history</h2>
+      <p class="bay-note">Grok Bot chats, routines, CUA, and MCP share one weekly Cursor-account grant. They do not each export a usage file. Drop the meter screenshot, not the conversation.</p>
+      <div class="surface-grid">
+        ${SURFACE_GUIDE.map(
+          (s) => `<article class="surface-card" data-fills="${s.fillsTank}">
+            <h3>${s.title}</h3>
+            <p><span>History</span> ${s.history}</p>
+            <p><span>Drop</span> ${s.drop}</p>
+            <p><span>Tank</span> ${s.tank}</p>
+          </article>`,
+        ).join("")}
       </div>
     </section>
 

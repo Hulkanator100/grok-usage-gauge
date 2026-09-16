@@ -1,0 +1,20 @@
+Date,Kind,Model,Max Mode,Input (w/ Cache Write),Input (w/o Cache Write),Cache Read,Output Tokens,Total Tokens,Cost,Cloud Agent ID,Automation ID,User
+2026-09-12T15:04:11.000Z,Included,grok-bot-default,No,12000,8000,45000,1800,66800,$0.80,,,
+2026-09-12T16:22:40.000Z,Included,grok-4.6,No,22000,4100,88000,2400,116500,$1.20,,,
+2026-09-12T18:01:09.000Z,Included,claude-4-sonnet,No,9000,2100,12000,1100,24200,$0.40,,,
+2026-09-13T11:12:00.000Z,Included,grok-bot-automation,No,30000,5000,140000,900,175900,$0.50,,,rt-sample
+2026-09-13T13:44:18.000Z,Included,composer-2,No,18000,6000,52000,2100,78100,$0.90,,,
+2026-09-13T19:05:33.000Z,Included,grok-bot-cua,No,4000,1500,9000,700,15200,$0.20,,,
+2026-09-14T09:18:02.000Z,Included,grok-bot-default,No,15000,7000,61000,1600,84600,$1.10,,,
+2026-09-14T10:55:47.000Z,Included,grok-4.5,Yes,11000,3000,40000,1900,55900,$0.70,,,
+2026-09-14T21:07:15.000Z,Included,claude-4-sonnet,No,42000,8000,96000,3200,149200,$1.50,bc-c10ud-agent-0001,,
+2026-09-15T08:30:00.000Z,Included,grok-bot-default,No,6000,2000,18000,800,26800,$0.40,,,
+2026-09-15T12:11:29.000Z,Included,composer-2,No,9000,2500,27000,1400,39900,$0.55,,,
+2026-09-15T14:02:10.000Z,On-Demand,grok-4.6,No,8000,1000,5000,600,14600,$0.35,,,
+2026-09-15T16:40:00.000Z,Included,gpt-4.1,No,2000,400,1000,200,3600,Included,,,
+2026-09-16T07:05:44.000Z,Included,grok-bot-automation,No,22000,4000,99000,1200,126200,$0.65,,,rt-sample
+2026-09-16T11:19:03.000Z,Included,grok-4.6,No,16000,3500,47000,2000,68500,$1.00,,,
+2026-09-16T15:28:51.000Z,Usage-based,claude-4-sonnet,No,19000,4000,33000,2100,58100,$0.80,,,
+2026-09-16T16:01:00.000Z,Included,cursor-small,No,500,100,200,80,880,Free,,,
+2026-09-16T16:40:00.000Z,Included,gpt-4.1,No,10,10,10,10,40,-,,,
+2026-09-16T17:12:22.000Z,Included,claude-4-sonnet,No,300,50,80,40,470,$0.25,,,
