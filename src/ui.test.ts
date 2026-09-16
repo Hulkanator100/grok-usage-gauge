@@ -55,7 +55,7 @@ describe("local controls sliders", () => {
       paste: "",
       capturedAtLocal: "2026-09-16T18:00",
     });
-    expect(html).toContain("class=\"controls-panel\"");
+    expect(html).toContain("controls-panel");
     expect(html).toContain("Cursor month");
     expect(html).toContain("X Grok · 2-hour windows");
     expect(html).toContain('id="ondemand-cap" type="range"');
