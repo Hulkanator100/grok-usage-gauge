@@ -482,6 +482,17 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
   font-size: 0.75rem;
   color: var(--dim);
 }
+.estimate-value {
+  margin: 0.15rem 0 0.45rem;
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.estimate-card.changed {
+  border-color: var(--amber);
+}
+.estimate-card.stable .estimate-value { color: var(--amber); }
 .overlay-wrap { margin: 0.85rem 0 1.1rem; }
 .trace.overlay { width: 100%; height: auto; }
 .overlay-line { stroke-width: 2.2; }

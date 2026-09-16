@@ -4,6 +4,7 @@ import type { AppSettings, LastImport, Reading, TankId } from "./types";
 import { CURSOR_TANK_IDS, isXGrokTank, TANK_IDS, TANK_META, X_GROK_CAPS, X_GROK_TANK_IDS } from "./types";
 import { sortedReadings } from "./storage";
 import { historyPoints, polylineRemaining, timeWindow, type HistoryPoint } from "./chart";
+import { estimateAllTanks, polylineValues, type TankEstimate } from "./estimate";
 
 function fmtPct(n: number | undefined): string {
   if (n == null || Number.isNaN(n)) return "—";
@@ -263,6 +264,58 @@ export function renderHistoryInstrument(readings: Reading[], settings: AppSettin
   `;
 }
 
+function fmtEstimate(e: TankEstimate): string {
+  if (e.estimate == null) return "—";
+  if (e.unit === "requests") return `${Math.round(e.estimate)} requests / 2h`;
+  return fmtUsd(e.estimate);
+}
+
+function renderEstimatePanel(e: TankEstimate): string {
+  const meta = TANK_META[e.tank];
+  const spark =
+    e.samples.length >= 2
+      ? `<svg class="spark" viewBox="0 0 200 52" role="img" aria-label="Estimated unpublished metric over time">
+      <rect x="0.5" y="0.5" width="199" height="51" class="spark-face"/>
+      <path d="${polylineValues(e.samples, 200, 52)}" class="spark-line" fill="none"/>
+    </svg>`
+      : `<p class="spark-idle">Need 2+ samples for a trend line</p>`;
+  const change =
+    e.changedAt && e.previousEra != null && e.estimate != null
+      ? `<p class="accel-warn" role="alert"><strong>Possible backend change:</strong> prior cluster ${e.unit === "usd" ? fmtUsd(e.previousEra) : `${Math.round(e.previousEra)} req`} → now ${fmtEstimate(e)} (${fmtWhen(new Date(e.changedAt))}).</p>`
+      : "";
+  const drift =
+    e.vsFallback
+      ? `<p class="token-note">Observed ${fmtEstimate(e)} vs fallback ${e.unit === "usd" ? fmtUsd(e.vsFallback.fallback) : `${e.vsFallback.fallback} req`} (${(e.vsFallback.deltaRatio * 100).toFixed(0)}% off). Keep sampling.</p>`
+      : "";
+  return `<article class="instrument-card estimate-card ${e.changedAt ? "changed" : ""} ${e.stable ? "stable" : ""}">
+    <h3>${meta.title}</h3>
+    <p class="clock">${e.sampleCount} observation${e.sampleCount === 1 ? "" : "s"} · ${e.stable ? "stable cluster" : "provisional"}</p>
+    <p class="estimate-value">${fmtEstimate(e)}</p>
+    ${spark}
+    <p class="instrument-read">${e.note}</p>
+    ${change}
+    ${drift}
+  </article>`;
+}
+
+export function renderEstimateInstrument(readings: Reading[], settings: AppSettings): string {
+  const fallbacks: Partial<Record<TankId, number>> = {
+    otherModelsMonthly: otherModelsCapUsd(settings.plan, settings.customOtherModelsUsd),
+    onDemandMonthly: settings.onDemandCapUsd,
+    xGrokLight: settings.xLightCap,
+    xGrokMedium: settings.xMediumCap,
+    xGrokHeavy: settings.xHeavyCap,
+  };
+  const rows = estimateAllTanks(readings, fallbacks).map(renderEstimatePanel).join("");
+  return `
+    <section class="instrument estimate">
+      <h2>Unpublished estimate</h2>
+      <p class="bay-note">This is the endgame: they will not publish Bot-week $, Cursor Models included $, or the real X Light/Medium/Heavy 2-hour caps. Each reading with spend+% (or used/cap) is a sample of <em>implied grant = spend ÷ (% used / 100)</em>, or the observed request cap. The rolling median of the current cluster is the working estimate. If a new cluster disagrees by more than 12%, the backend pool probably moved — keep dropping; do not call session APIs.</p>
+      <div class="instrument-grid">${rows}</div>
+    </section>
+  `;
+}
+
 export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoint[]): string {
   const meta = TANK_META[tank];
   const known = m.percentUsed != null;
@@ -379,7 +432,7 @@ export function renderApp(args: {
       <div class="horizon" aria-hidden="true"></div>
       <p class="eyebrow">Cursor tanks · X Grok windows · never one bar</p>
       <h1>Grok Usage Gauge</h1>
-      <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a> for Cursor tanks. Paste Grok-on-X Light / Medium / Heavy request counts (often a 2-hour window) into the X tanks — those are not Cursor $. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills Cursor spend. <strong>grok.com</strong> SuperGrok Usage is rejected. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
+      <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a> for Cursor tanks. Paste Grok-on-X Light / Medium / Heavy request counts (often a 2-hour window) into the X tanks — those are not Cursor $. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills Cursor spend. <strong>grok.com</strong> SuperGrok Usage is rejected. Enough timestamped readings (spend+% or used/cap) roll into an <strong>unpublished estimate</strong> — implied grant $ or observed 2h request caps — and warn if a new cluster says the backend pool moved. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
       <p id="origin-banner" class="origin-banner" role="note"></p>
       ${
         args.lastImport
@@ -408,6 +461,7 @@ export function renderApp(args: {
     </section>
 
     ${renderHistoryInstrument(args.readings, args.settings)}
+    ${renderEstimateInstrument(args.readings, args.settings)}
 
     <section class="console">
       <div class="panel">

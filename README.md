@@ -138,6 +138,15 @@ Cursor + SuperGrok + X Premium+ for Grok Bot = **one** Bot grant (the larger) on
 - Range / empty-at if the latest interval’s burn continues (needs 2+ readings)
 - Acceleration: if the newest interval is **>~15% faster** than the previous **and** projected empty is before reset, warn with clock time and hours early
 
+### Unpublished estimate (the actual goal)
+
+Cursor/xAI/X will not publish Bot-week $, Cursor Models included $, or the real Grok-on-X Light/Medium/Heavy 2-hour request caps. This page does **not** scrape session APIs. It infers:
+
+- **Dollar tanks:** implied grant = `spend ÷ (% used / 100)` when % ≥ 0.5. Each timestamped reading is a sample. The rolling **median of the current cluster** is the working estimate.
+- **X request tanks:** observed `used/cap` (or cap implied from used ÷ %). Same clustering.
+- **Backend change:** if a new cluster disagrees by **>12%** with the previous cluster, the unpublished pool probably moved. Keep dropping readings.
+- **3+ agreeing samples** in one cluster = “stable enough.” Two is provisional.
+
 **Load example week** seeds two on-pace readings so the page works before a real paste. **Load accelerating week** must warn **empty before weekly reset** on the Grok Bot tank. **Load bundled usage-events CSV** seeds daily cumulative spend from the sample export.
 
 ## Out of v1 (do not build tanks)

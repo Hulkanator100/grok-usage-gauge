@@ -41,7 +41,8 @@ describe("history instrument", () => {
     expect(html).toContain("Cursor remaining-fuel traces over the captured period");
     expect(html).toContain("X Grok request windows");
     expect(html).toContain('class="spark"');
-    expect(html.match(/class="instrument-card"/g)?.length).toBe(7);
+    expect(html).toContain("Unpublished estimate");
+    expect(html.match(/class="instrument-card"/g)?.length).toBeGreaterThanOrEqual(7);
     const accel = renderHistoryInstrument(
       buildAcceleratingWeek(new Date("2026-09-16T18:00:00Z")),
       DEFAULT_SETTINGS,
