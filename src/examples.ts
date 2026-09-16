@@ -6,6 +6,18 @@ function rid(prefix: string, n: number): string {
   return `${prefix}-${n}`;
 }
 
+function xWindow(now: Date, used: number, cap: number, frac: number) {
+  const periodEnd = new Date(now.getTime() + (1 - Math.min(0.95, frac)) * 2 * 60 * 60 * 1000);
+  const periodStart = new Date(periodEnd.getTime() - 2 * 60 * 60 * 1000);
+  return {
+    percentUsed: (used / cap) * 100,
+    requestUsed: used,
+    requestCap: cap,
+    periodStart: periodStart.toISOString(),
+    periodEnd: periodEnd.toISOString(),
+  };
+}
+
 export function buildExampleWeek(now = new Date()): Reading[] {
   const endBot = new Date(now.getTime() + 2.2 * DAY);
   const startBot = new Date(endBot.getTime() - 7 * DAY);
@@ -56,6 +68,9 @@ export function buildExampleWeek(now = new Date()): Reading[] {
           periodStart: monthStart.toISOString(),
           periodEnd: monthEnd.toISOString(),
         },
+        xGrokLight: xWindow(t1, 18, 100, 0.25),
+        xGrokMedium: xWindow(t1, 6, 30, 0.2),
+        xGrokHeavy: xWindow(t1, 1, 10, 0.1),
       },
     },
     {
@@ -90,6 +105,9 @@ export function buildExampleWeek(now = new Date()): Reading[] {
           periodStart: monthStart.toISOString(),
           periodEnd: monthEnd.toISOString(),
         },
+        xGrokLight: xWindow(t2, 47, 100, 0.55),
+        xGrokMedium: xWindow(t2, 14, 30, 0.5),
+        xGrokHeavy: xWindow(t2, 3, 10, 0.4),
       },
     },
   ];
@@ -143,6 +161,9 @@ export function buildAcceleratingWeek(now = new Date()): Reading[] {
           periodStart: monthStartIso,
           periodEnd: monthEndIso,
         },
+        xGrokLight: xWindow(t1, 8, 100, 0.12),
+        xGrokMedium: xWindow(t1, 2, 30, 0.1),
+        xGrokHeavy: xWindow(t1, 0, 10, 0),
       },
     },
     {
@@ -176,6 +197,9 @@ export function buildAcceleratingWeek(now = new Date()): Reading[] {
           periodStart: monthStartIso,
           periodEnd: monthEndIso,
         },
+        xGrokLight: xWindow(t2, 28, 100, 0.35),
+        xGrokMedium: xWindow(t2, 9, 30, 0.3),
+        xGrokHeavy: xWindow(t2, 2, 10, 0.2),
       },
     },
     {
@@ -210,6 +234,9 @@ export function buildAcceleratingWeek(now = new Date()): Reading[] {
           periodStart: monthStartIso,
           periodEnd: monthEndIso,
         },
+        xGrokLight: xWindow(t3, 61, 100, 0.7),
+        xGrokMedium: xWindow(t3, 18, 30, 0.65),
+        xGrokHeavy: xWindow(t3, 6, 10, 0.6),
       },
     },
   ];

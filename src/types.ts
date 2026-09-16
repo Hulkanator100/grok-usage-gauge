@@ -1,11 +1,30 @@
-export const TANK_IDS = [
+export const CURSOR_TANK_IDS = [
   "grokBotWeekly",
   "cursorModelsMonthly",
   "otherModelsMonthly",
   "onDemandMonthly",
 ] as const;
 
+export const X_GROK_TANK_IDS = ["xGrokLight", "xGrokMedium", "xGrokHeavy"] as const;
+
+export const TANK_IDS = [...CURSOR_TANK_IDS, ...X_GROK_TANK_IDS] as const;
+
 export type TankId = (typeof TANK_IDS)[number];
+export type CursorTankId = (typeof CURSOR_TANK_IDS)[number];
+export type XGrokTankId = (typeof X_GROK_TANK_IDS)[number];
+
+export function isXGrokTank(id: TankId): id is XGrokTankId {
+  return (X_GROK_TANK_IDS as readonly string[]).includes(id);
+}
+
+export type XGrokPlan = "free" | "premium" | "premiumPlus";
+
+/** Fallback request caps for Grok-on-X Light / Medium / Heavy 2-hour windows. Paste of 12/50 overrides. */
+export const X_GROK_CAPS: Record<XGrokPlan, { light: number; medium: number; heavy: number }> = {
+  free: { light: 20, medium: 10, heavy: 5 },
+  premium: { light: 50, medium: 20, heavy: 10 },
+  premiumPlus: { light: 100, medium: 30, heavy: 10 },
+};
 
 export type CursorPlan = "pro" | "proPlus" | "ultra" | "custom";
 
@@ -39,6 +58,9 @@ export interface TankSnapshot {
   periodEnd?: string;
   spendUsd?: number;
   capUsd?: number;
+  /** Grok-on-X Light/Medium/Heavy: requests used in the current ~2h window. */
+  requestUsed?: number;
+  requestCap?: number;
   mixCents?: MixCents;
   tokenTotals?: TokenTotals;
 }
@@ -75,6 +97,10 @@ export interface AppSettings {
   plan: CursorPlan;
   customOtherModelsUsd: number;
   onDemandCapUsd: number;
+  xPlan: XGrokPlan;
+  xLightCap: number;
+  xMediumCap: number;
+  xHeavyCap: number;
 }
 
 export interface LastImport {
@@ -95,6 +121,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   plan: "pro",
   customOtherModelsUsd: 20,
   onDemandCapUsd: 20,
+  xPlan: "premiumPlus",
+  xLightCap: 100,
+  xMediumCap: 30,
+  xHeavyCap: 10,
 };
 
 export const TANK_META: Record<
@@ -129,5 +159,23 @@ export const TANK_META: Record<
     clock: "Monthly cap",
     surfaces: "Real USD overflow from Cursor and from Grok Bot after Bot week hits 100% (if on-demand is on).",
     grantNote: "Charge order: Bot week → promo credits → paid on-demand. $0 cap = hard stop.",
+  },
+  xGrokLight: {
+    title: "X Grok Light",
+    clock: "Rolling ~2 hour request window (7200s)",
+    surfaces: "Grok on x.com / the X app. Light / Fast / default requests. Separate from Cursor tanks and from grok.com SuperGrok week.",
+    grantNote: "Counted as requests this window, not Cursor $. Paste 42/50 or remaining. Fallback cap follows the X plan control.",
+  },
+  xGrokMedium: {
+    title: "X Grok Medium",
+    clock: "Rolling ~2 hour request window (7200s)",
+    surfaces: "Grok on X Think / Medium mode. Does not share a bar with Light or Heavy, and does not fill Cursor Models.",
+    grantNote: "Same 2-hour clock as Light/Heavy but its own request grant.",
+  },
+  xGrokHeavy: {
+    title: "X Grok Heavy",
+    clock: "Rolling ~2 hour request window (7200s)",
+    surfaces: "Grok on X Heavy mode (multi-agent). Not SuperGrok Heavy the grok.com plan, and not Cursor Grok Bot.",
+    grantNote: "Requests this window only. Never summed with Light, Medium, or Cursor.",
   },
 };

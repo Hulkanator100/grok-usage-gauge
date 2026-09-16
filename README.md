@@ -24,6 +24,7 @@ Chrome often leaves `usage-events-*.csv.crdownload` at **0 bytes**. The gauge re
 | CLI `/usage` | Auto/API included meters, on-demand vs limit, reset | Screenshot or copied `/usage` | Cursor month |
 | Cloud Agents | Analytics = counts; dollars = usage events. Grok Bot-launched agents also hit Cursor month | Spending screenshot | Tanks 2/3/(4) **and** Bot week |
 | Bugbot | GitHub PR reviews; team analytics ≠ $ | Spending after runs | Other / on-demand |
+| X Grok on x.com | Light / Medium / Heavy request windows (~2 hours) | Screenshot or paste `Light 42/100` | X Light, Medium, Heavy |
 | grok.com Settings → Usage | SuperGrok week, Extra Usage Credits, Auto Top-Up | **Out of v1** — detected and rejected (sidebar “Grok Bot” does not fill tank 1) | none |
 
 Sample droppable text lives in `public/samples/`.
@@ -103,14 +104,19 @@ Do **not** paste API keys, Bearer tokens, or `state.vscdb`. Official session API
 }
 ```
 
-## The four tanks (v1)
+## Cursor tanks and X Grok windows
 
 | Tank | Clock | What it is |
 | --- | --- | --- |
-| Grok Bot weekly included | ~7 day / 604800s reset | Cursor **account** cost ÷ unpublished Bot grant. Surfaces: chats, routines, CUA, MCP on the Bot PC. Separate from grok.com. |
+| Grok Bot weekly included | ~7 day / 604800s reset | Cursor **account** cost ÷ unpublished Bot grant. Surfaces: chats, routines, CUA, MCP on the Bot PC. Separate from grok.com **and** from Grok on X. |
 | Cursor Models | Monthly billing cycle | Editor Grok 4.6 / 4.5 + Composer 2.5. “Generous” unpublished included amount. Header % is Cursor-app usage; `grok-bot-*` rows under Cursor Models were a **display bug**. |
 | Other Models | Monthly | Claude / GPT / etc. Public included $: Pro ~$20 / Pro+ ~$70 / Ultra ~$400 for Other Models / API agent. Cloud Agents, Bugbot, and CLI also hit the Cursor month. |
 | Cursor on-demand $ | Monthly cap | Real USD overflow from Cursor **and** from Grok Bot after Bot week hits 100% if on-demand is on. Charge order: Bot week → promo credits → paid on-demand. **$0 cap = hard stop**. |
+| X Grok Light | Rolling ~2 hour requests | Grok on **x.com / the X app**. Light / Fast / default. Paste `42/100` or remaining. Not Cursor $. |
+| X Grok Medium | Rolling ~2 hour requests | Think / Medium on X. Own grant, same clock as Light/Heavy. |
+| X Grok Heavy | Rolling ~2 hour requests | Heavy mode on X. Not SuperGrok Heavy the grok.com plan, not Cursor Grok Bot. |
+
+Never sum Cursor tanks with X windows. Fallback request caps follow the X plan control (Free / Premium / Premium+); a pasted `used/cap` always wins. Those fallbacks are typical 2-hour ranges, not an xAI contract.
 
 Weekly Bot % is **cost-based** (input / output / cache at model rates ÷ unpublished weekly grant), **not** raw tokens. Mix must be **cents**: `grok-bot-default` (chat), `grok-bot-automation` (routines), `grok-bot-cua` (computer/browser). Routines re-send conversation context; cache reads inflate token totals.
 
@@ -138,8 +144,8 @@ Cursor + SuperGrok + X Premium+ for Grok Bot = **one** Bot grant (the larger) on
 
 - grok.com SuperGrok week (Chat / Imagine / Voice / Build, iOS/Android Grok, Companions, Tesla Grok signed into that Grok account)
 - xAI API prepaid (`api.x.ai`, `cost_in_usd_ticks`, 1 USD = 10^10 ticks)
-- X developer API credits (`GET /2/usage/credits`) — **not** Grok-on-X chat
-- Message counts (retired June 2026) and Tab completions (unlimited on paid Cursor)
+- X developer API credits (`GET /2/usage/credits`) — **not** Grok-on-X Light/Medium/Heavy
+- Cursor tab completions (unlimited on paid Cursor)
 
 ## Later (not this page)
 

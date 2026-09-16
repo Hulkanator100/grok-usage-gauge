@@ -2,6 +2,7 @@ import type { MixCents, Reading, TankId, TankSnapshot, TokenTotals } from "./typ
 import { TANK_IDS } from "./types";
 import { looksLikeUsageEventsCsv, parseUsageEventsCsv } from "./parseUsageCsv";
 import { GROK_COM_REJECT_NOTE, looksLikeGrokComUsage, parseUsageText, readingFromParsed } from "./parseUsageText";
+import { DEFAULT_SETTINGS, type AppSettings } from "./types";
 
 const TANK_ALIASES: Array<{ id: TankId; patterns: RegExp[] }> = [
   {
@@ -24,6 +25,18 @@ const TANK_ALIASES: Array<{ id: TankId; patterns: RegExp[] }> = [
   {
     id: "onDemandMonthly",
     patterns: [/on[-\s]?demand/i, /monthly\s*limit/i, /spend(?:ing)?\s*cap/i],
+  },
+  {
+    id: "xGrokLight",
+    patterns: [/x\s*grok\s*light/i, /\blight\b.*\b(?:requests?|remaining)\b/i],
+  },
+  {
+    id: "xGrokMedium",
+    patterns: [/x\s*grok\s*medium/i, /\bmedium\b.*\b(?:requests?|remaining)\b/i, /\bthink\b.*\b(?:requests?|remaining)\b/i],
+  },
+  {
+    id: "xGrokHeavy",
+    patterns: [/x\s*grok\s*heavy/i, /\bheavy\b.*\b(?:requests?|remaining)\b/i],
   },
 ];
 
@@ -124,6 +137,9 @@ function parseJsonReading(obj: Record<string, unknown>, capturedAtFallback: stri
     ["cursorModelsMonthly", ["cursorModelsMonthly", "cursorModels", "autoUsage"]],
     ["otherModelsMonthly", ["otherModelsMonthly", "otherModels", "apiUsage"]],
     ["onDemandMonthly", ["onDemandMonthly", "onDemand", "spendLimit"]],
+    ["xGrokLight", ["xGrokLight", "xLight"]],
+    ["xGrokMedium", ["xGrokMedium", "xMedium"]],
+    ["xGrokHeavy", ["xGrokHeavy", "xHeavy"]],
   ];
 
   for (const [id, keys] of nestedMap) {
@@ -266,7 +282,7 @@ function parseTextPaste(text: string, capturedAtFallback: string): Reading {
   };
 }
 
-export function parsePaste(input: string, capturedAt = new Date().toISOString()): Reading[] {
+export function parsePaste(input: string, capturedAt = new Date().toISOString(), settings: AppSettings = DEFAULT_SETTINGS): Reading[] {
   const trimmed = input.trim();
   if (!trimmed) throw new Error("Paste is empty.");
 
@@ -304,7 +320,7 @@ export function parsePaste(input: string, capturedAt = new Date().toISOString())
     throw new Error(GROK_COM_REJECT_NOTE);
   }
 
-  const fromScreen = parseUsageText(trimmed, capturedAt);
+  const fromScreen = parseUsageText(trimmed, capturedAt, "", settings);
   if (fromScreen.fillsTank) {
     return [readingFromParsed(fromScreen, capturedAt, trimmed, "paste")];
   }
@@ -342,5 +358,13 @@ Included $20
 
 On-demand
 $0 of $20
-Billing cycle end 2026-10-01T00:00:00Z`;
+Billing cycle end 2026-10-01T00:00:00Z
+
+X Grok Light
+42 / 100 requests
+X Grok Medium
+11 / 30
+X Grok Heavy
+2 / 10
+Resets in 1 hour 18 minutes`;
 }

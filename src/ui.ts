@@ -1,7 +1,7 @@
 import { SURFACE_GUIDE } from "./surfaces";
 import { computeTankMetrics, otherModelsCapUsd, type TankMetrics } from "./metrics";
 import type { AppSettings, LastImport, Reading, TankId } from "./types";
-import { TANK_IDS, TANK_META } from "./types";
+import { CURSOR_TANK_IDS, isXGrokTank, TANK_IDS, TANK_META, X_GROK_CAPS, X_GROK_TANK_IDS } from "./types";
 import { sortedReadings } from "./storage";
 import { historyPoints, polylineRemaining, timeWindow, type HistoryPoint } from "./chart";
 
@@ -47,18 +47,33 @@ function snapshotsFor(readings: Reading[], tank: TankId) {
 }
 
 export function metricsForTank(readings: Reading[], tank: TankId, settings: AppSettings, now: Date): TankMetrics {
-  const kind = tank === "grokBotWeekly" ? "week" : tank === "onDemandMonthly" ? "cap" : "month";
+  const kind = isXGrokTank(tank)
+    ? "window2h"
+    : tank === "grokBotWeekly"
+      ? "week"
+      : tank === "onDemandMonthly"
+        ? "cap"
+        : "month";
   const fallbackCapUsd =
     tank === "otherModelsMonthly"
       ? otherModelsCapUsd(settings.plan, settings.customOtherModelsUsd)
       : tank === "onDemandMonthly"
         ? settings.onDemandCapUsd
         : undefined;
+  const fallbackRequestCap =
+    tank === "xGrokLight"
+      ? settings.xLightCap
+      : tank === "xGrokMedium"
+        ? settings.xMediumCap
+        : tank === "xGrokHeavy"
+          ? settings.xHeavyCap
+          : undefined;
   return computeTankMetrics({
     kind,
     snapshots: snapshotsFor(readings, tank),
     now,
     fallbackCapUsd,
+    fallbackRequestCap,
   });
 }
 
@@ -100,7 +115,11 @@ function rangeBlock(m: TankMetrics): string {
 function warnBlock(m: TankMetrics, tank: TankId): string {
   const w = m.acceleration;
   if (!w) return "";
-  const label = tank === "grokBotWeekly" ? "empty before weekly reset" : "empty before period end";
+  const label = isXGrokTank(tank)
+    ? "empty before the 2-hour X window resets"
+    : tank === "grokBotWeekly"
+      ? "empty before weekly reset"
+      : "empty before period end";
   return `<div class="accel-warn" role="alert">
     <strong>Acceleration:</strong> newest interval is ${((w.fasterRatio - 1) * 100).toFixed(0)}% faster than the previous
     (${w.newestBurnPercentPerHour.toFixed(2)} %/h vs ${w.previousBurnPercentPerHour.toFixed(2)} %/h).
@@ -181,31 +200,38 @@ const TRACE_DASH: Record<TankId, string> = {
   cursorModelsMonthly: "7 5",
   otherModelsMonthly: "2.5 3.5",
   onDemandMonthly: "12 4 2.5 4",
+  xGrokLight: "",
+  xGrokMedium: "7 5",
+  xGrokHeavy: "2.5 3.5",
 };
 
-function renderOverlay(readings: Reading[], settings: AppSettings): string {
-  const series = TANK_IDS.map((id) => historyPoints(readings, id, settings));
+function renderOverlay(readings: Reading[], settings: AppSettings, ids: readonly TankId[], aria: string): string {
+  const series = ids.map((id) => historyPoints(readings, id, settings));
   const win = timeWindow(series);
   const ready = series.filter((p) => p.length >= 2).length;
   if (!win || ready === 0) {
-    return `<p class="spark-idle">Load two or more timestamped readings (example week works) to draw remaining fuel over the period.</p>`;
+    return `<p class="spark-idle">Load two or more timestamped readings (example week works) to draw remaining over the period.</p>`;
   }
   const w = 960;
   const h = 220;
-  const traces = TANK_IDS.map((id, i) => {
-    const points = series[i];
-    if (points.length < 2) return "";
-    const d = polylineRemaining(points, w, h, 36, 22, win);
-    const dash = TRACE_DASH[id] ? ` stroke-dasharray="${TRACE_DASH[id]}"` : "";
-    return `<path d="${d}" class="spark-line overlay-line overlay-${i}" fill="none"${dash}/>`;
-  }).join("");
-  const legend = TANK_IDS.map((id, i) => {
-    const dash = TRACE_DASH[id] ? ` stroke-dasharray="${TRACE_DASH[id]}"` : "";
-    return `<li><svg class="legend-swatch" viewBox="0 0 36 8" aria-hidden="true"><line x1="1" y1="4" x2="35" y2="4" class="spark-line overlay-${i}"${dash}/></svg>${TANK_META[id].title}</li>`;
-  }).join("");
+  const traces = ids
+    .map((id, i) => {
+      const points = series[i];
+      if (points.length < 2) return "";
+      const d = polylineRemaining(points, w, h, 36, 22, win);
+      const dash = TRACE_DASH[id] ? ` stroke-dasharray="${TRACE_DASH[id]}"` : "";
+      return `<path d="${d}" class="spark-line overlay-line overlay-${i}" fill="none"${dash}/>`;
+    })
+    .join("");
+  const legend = ids
+    .map((id, i) => {
+      const dash = TRACE_DASH[id] ? ` stroke-dasharray="${TRACE_DASH[id]}"` : "";
+      return `<li><svg class="legend-swatch" viewBox="0 0 36 8" aria-hidden="true"><line x1="1" y1="4" x2="35" y2="4" class="spark-line overlay-${i}"${dash}/></svg>${TANK_META[id].title}</li>`;
+    })
+    .join("");
   return `
     <div class="overlay-wrap">
-      <svg class="trace overlay" viewBox="0 0 ${w} ${h}" role="img" aria-label="Four remaining-fuel traces over the captured period">
+      <svg class="trace overlay" viewBox="0 0 ${w} ${h}" role="img" aria-label="${aria}">
         <rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" class="spark-face"/>
         <text class="axis-y" x="14" y="28">F</text>
         <text class="axis-y" x="14" y="${h - 14}">E</text>
@@ -219,13 +245,20 @@ function renderOverlay(readings: Reading[], settings: AppSettings): string {
 }
 
 export function renderHistoryInstrument(readings: Reading[], settings: AppSettings): string {
-  const panels = TANK_IDS.map((id) => renderTankHistoryPanel(id, historyPoints(readings, id, settings))).join("");
+  const cursorPanels = CURSOR_TANK_IDS.map((id) =>
+    renderTankHistoryPanel(id, historyPoints(readings, id, settings)),
+  ).join("");
+  const xPanels = X_GROK_TANK_IDS.map((id) => renderTankHistoryPanel(id, historyPoints(readings, id, settings))).join("");
   return `
     <section class="instrument">
       <h2>History instrument</h2>
-      <p class="bay-note">Remaining fuel over the captured period (F at the top, E at the bottom). Four traces stay separate — this is not one summed tank. Amber, starlight, hot amber, and dim traces plus dash patterns keep the pools distinct.</p>
-      ${renderOverlay(readings, settings)}
-      <div class="instrument-grid">${panels}</div>
+      <p class="bay-note">Remaining over the captured period (F at the top, E at the bottom). Cursor traces and X Grok traces stay in separate groups — never one summed tank.</p>
+      <h3 class="instrument-sub">Cursor</h3>
+      ${renderOverlay(readings, settings, CURSOR_TANK_IDS, "Cursor remaining-fuel traces over the captured period")}
+      <div class="instrument-grid">${cursorPanels}</div>
+      <h3 class="instrument-sub">X Grok request windows</h3>
+      ${renderOverlay(readings, settings, X_GROK_TANK_IDS, "X Grok Light Medium Heavy remaining over the captured period")}
+      <div class="instrument-grid three">${xPanels}</div>
     </section>
   `;
 }
@@ -277,12 +310,20 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
             </g>
           </svg>
         </div>
-        <div class="used-readout">${fmtPct(m.percentUsed)} used</div>
+        <div class="used-readout">${
+          m.requestCap != null && m.requestUsed != null
+            ? `${m.requestUsed} / ${m.requestCap} requests`
+            : `${fmtPct(m.percentUsed)} used`
+        }</div>
         ${renderSpark(points)}
       </div>
       <dl class="metrics">
         <div class="metric"><span>Remaining</span><strong>${fmtPct(m.remainingPct)}</strong>${
-          m.remainingUsd != null ? `<em>${fmtUsd(m.remainingUsd)} left</em>` : `<em>remaining $ when spend/% known</em>`
+          m.requestCap != null && m.requestUsed != null
+            ? `<em>${Math.max(0, m.requestCap - m.requestUsed)} of ${m.requestCap} requests left this 2h window</em>`
+            : m.remainingUsd != null
+              ? `<em>${fmtUsd(m.remainingUsd)} left</em>`
+              : `<em>remaining $ when spend/% known</em>`
         }</div>
         <div class="metric"><span>Reset / period end</span><strong>${fmtWhen(m.periodEnd)}</strong></div>
         <div class="metric"><span>Pace</span><strong>${fmtPace(m.pace)}</strong><em>1.00× = on calendar budget</em></div>
@@ -312,7 +353,10 @@ export function renderApp(args: {
   lastImport?: LastImport;
 }): string {
   const now = new Date();
-  const cards = TANK_IDS.map((id) =>
+  const cursorCards = CURSOR_TANK_IDS.map((id) =>
+    renderTankCard(id, metricsForTank(args.readings, id, args.settings, now), historyPoints(args.readings, id, args.settings)),
+  ).join("");
+  const xCards = X_GROK_TANK_IDS.map((id) =>
     renderTankCard(id, metricsForTank(args.readings, id, args.settings, now), historyPoints(args.readings, id, args.settings)),
   ).join("");
   const n = args.readings.length;
@@ -333,9 +377,9 @@ export function renderApp(args: {
   return `
     <header class="masthead">
       <div class="horizon" aria-hidden="true"></div>
-      <p class="eyebrow">Four tanks · never one bar</p>
+      <p class="eyebrow">Cursor tanks · X Grok windows · never one bar</p>
       <h1>Grok Usage Gauge</h1>
-      <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills spend (mix cents for grok-bot-*); Bot/Cursor Models stay spend-only unless % is known; Other Models / on-demand % use plan/cap. Chrome <code>.crdownload</code> leftovers are empty — re-export. <strong>grok.com</strong> SuperGrok Usage (Weekly SuperGrok Limit, Extra Usage Credits) is detected and rejected — that is not the Cursor Grok Bot week. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
+      <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a> for Cursor tanks. Paste Grok-on-X Light / Medium / Heavy request counts (often a 2-hour window) into the X tanks — those are not Cursor $. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills Cursor spend. <strong>grok.com</strong> SuperGrok Usage is rejected. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
       <p id="origin-banner" class="origin-banner" role="note"></p>
       ${
         args.lastImport
@@ -352,9 +396,15 @@ export function renderApp(args: {
     </header>
 
     <section class="bay">
-      <h2 class="bay-title">Fuel tanks</h2>
+      <h2 class="bay-title">Cursor fuel tanks</h2>
       <p class="bay-note">Keep these separate. If Grok Bot launches a Cursor cloud agent, that run bills Cursor Models / Other Models / maybe on-demand as well as the Bot week — show both, do not merge. Plans do not stack: Cursor + SuperGrok + X Premium+ for Grok Bot = one Bot grant (the larger) on the Cursor account.</p>
-      <div class="tank-grid">${cards}</div>
+      <div class="tank-grid">${cursorCards}</div>
+    </section>
+
+    <section class="bay">
+      <h2 class="bay-title">X Grok request windows</h2>
+      <p class="bay-note">Grok on x.com / the X app. Light, Medium, and Heavy are three request grants on a rolling ~2 hour clock. They are not Cursor Models, not Cursor Grok Bot week, and not grok.com SuperGrok weekly %. X developer API usage credits stay out of these tanks. Fallback caps are typical published-range numbers for the X plan you pick; a paste of 42/50 always wins.</p>
+      <div class="tank-grid three">${xCards}</div>
     </section>
 
     ${renderHistoryInstrument(args.readings, args.settings)}
@@ -423,10 +473,26 @@ export function renderApp(args: {
         <label>On-demand monthly cap USD ($0 = hard stop)
           <input id="ondemand-cap" type="number" min="0" step="1" value="${args.settings.onDemandCapUsd}" />
         </label>
+        <label>X Grok plan (2-hour request fallback caps)
+          <select id="x-plan">
+            <option value="free" ${args.settings.xPlan === "free" ? "selected" : ""}>X Free · Light ${X_GROK_CAPS.free.light} / Medium ${X_GROK_CAPS.free.medium} / Heavy ${X_GROK_CAPS.free.heavy}</option>
+            <option value="premium" ${args.settings.xPlan === "premium" ? "selected" : ""}>X Premium · Light ${X_GROK_CAPS.premium.light} / Medium ${X_GROK_CAPS.premium.medium} / Heavy ${X_GROK_CAPS.premium.heavy}</option>
+            <option value="premiumPlus" ${args.settings.xPlan === "premiumPlus" ? "selected" : ""}>X Premium+ · Light ${X_GROK_CAPS.premiumPlus.light} / Medium ${X_GROK_CAPS.premiumPlus.medium} / Heavy ${X_GROK_CAPS.premiumPlus.heavy}</option>
+          </select>
+        </label>
+        <label>X Light requests / 2h
+          <input id="x-light-cap" type="number" min="1" step="1" value="${args.settings.xLightCap}" />
+        </label>
+        <label>X Medium requests / 2h
+          <input id="x-medium-cap" type="number" min="1" step="1" value="${args.settings.xMediumCap}" />
+        </label>
+        <label>X Heavy requests / 2h
+          <input id="x-heavy-cap" type="number" min="1" step="1" value="${args.settings.xHeavyCap}" />
+        </label>
         <ul class="out-of-v1">
           <li>Out of v1 (no tanks): grok.com SuperGrok week, xAI API prepaid ticks, X developer API <code>GET /2/usage/credits</code>.</li>
-          <li>Do not lead with message counts (retired). Tab completions are not a tank.</li>
-          <li>Charge order: Bot week → promo credits → paid on-demand.</li>
+          <li>Cursor tab completions are not a tank. Grok-on-X Light/Medium/Heavy <em>are</em> tanks (requests / 2h).</li>
+          <li>Charge order on Cursor: Bot week → promo credits → paid on-demand.</li>
         </ul>
       </div>
     </section>

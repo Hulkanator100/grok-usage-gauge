@@ -258,12 +258,18 @@ export function parseUsageEventsCsv(text: string, options: ParseUsageCsvOptions 
     cursorModelsMonthly: 0,
     otherModelsMonthly: 0,
     onDemandMonthly: 0,
+    xGrokLight: 0,
+    xGrokMedium: 0,
+    xGrokHeavy: 0,
   };
   const tokens: Record<TankId, TokenTotals> = {
     grokBotWeekly: emptyTokens(),
     cursorModelsMonthly: emptyTokens(),
     otherModelsMonthly: emptyTokens(),
     onDemandMonthly: emptyTokens(),
+    xGrokLight: emptyTokens(),
+    xGrokMedium: emptyTokens(),
+    xGrokHeavy: emptyTokens(),
   };
   const mix: MixCents = {};
 

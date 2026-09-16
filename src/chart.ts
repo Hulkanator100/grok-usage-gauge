@@ -1,5 +1,5 @@
 import type { AppSettings, Reading, TankId, TankSnapshot } from "./types";
-import { otherModelsCapUsd } from "./metrics";
+import { otherModelsCapUsd, percentFromRequests } from "./metrics";
 import { sortedReadings } from "./storage";
 
 export interface HistoryPoint {
@@ -8,8 +8,10 @@ export interface HistoryPoint {
   remaining: number;
 }
 
-function usedFromSnap(snap: TankSnapshot, fallbackCapUsd?: number): number | undefined {
+function usedFromSnap(snap: TankSnapshot, fallbackCapUsd?: number, fallbackRequestCap?: number): number | undefined {
   if (snap.percentUsed != null && Number.isFinite(snap.percentUsed)) return snap.percentUsed;
+  const fromReq = percentFromRequests(snap.requestUsed, snap.requestCap ?? fallbackRequestCap);
+  if (fromReq != null) return fromReq;
   const cap = snap.capUsd ?? fallbackCapUsd;
   if (snap.spendUsd != null && cap != null && cap > 0) return (snap.spendUsd / cap) * 100;
   if (cap === 0 && snap.spendUsd != null) return snap.spendUsd > 0 ? 100 : 0;
@@ -22,13 +24,21 @@ function fallbackCap(tank: TankId, settings: AppSettings): number | undefined {
   return undefined;
 }
 
+function fallbackRequestCap(tank: TankId, settings: AppSettings): number | undefined {
+  if (tank === "xGrokLight") return settings.xLightCap;
+  if (tank === "xGrokMedium") return settings.xMediumCap;
+  if (tank === "xGrokHeavy") return settings.xHeavyCap;
+  return undefined;
+}
+
 export function historyPoints(readings: Reading[], tank: TankId, settings: AppSettings): HistoryPoint[] {
   const cap = fallbackCap(tank, settings);
+  const reqCap = fallbackRequestCap(tank, settings);
   const out: HistoryPoint[] = [];
   for (const r of sortedReadings(readings)) {
     const snap = r.tanks[tank];
     if (!snap) continue;
-    const used = usedFromSnap(snap, cap);
+    const used = usedFromSnap(snap, cap, reqCap);
     if (used == null) continue;
     const clamped = Math.max(0, Math.min(100, used));
     out.push({ t: new Date(r.capturedAt).getTime(), used: clamped, remaining: 100 - clamped });

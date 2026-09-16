@@ -1,7 +1,8 @@
-import type { MixCents, Reading, TankId, TankSnapshot } from "./types";
-import { TANK_IDS } from "./types";
+import type { AppSettings, MixCents, Reading, TankId, TankSnapshot } from "./types";
+import { DEFAULT_SETTINGS, TANK_IDS } from "./types";
 import type { SurfaceId } from "./surfaces";
 import { isCursorModelsModel, isGrokBotModel } from "./parseUsageCsv";
+import { looksLikeXGrokUsage, parseXGrokWindows, xGrokFilled } from "./parseXGrok";
 
 function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -163,7 +164,7 @@ function parseCursorUsageDashboard(text: string, _capturedAt: string): ParsedUsa
 
   const fillsTank = TANK_IDS.some((id) => {
     const s = tanks[id];
-    return s && (s.percentUsed != null || s.spendUsd != null || s.mixCents || s.tokenTotals);
+    return s && (s.percentUsed != null || s.spendUsd != null || s.mixCents || s.tokenTotals || s.requestUsed != null);
   });
 
   return {
@@ -181,6 +182,7 @@ export const GROK_COM_REJECT_NOTE =
 function classifySurface(text: string, fileName = ""): SurfaceId {
   const blob = `${fileName}\n${text}`;
   if (looksLikeGrokComUsage(blob)) return "grok-com";
+  if (looksLikeXGrokUsage(blob)) return "x-grok-windows";
   if (looksLikeCursorUsageDashboard(blob)) return "cursor-usage-dashboard";
   if (/you.?ve reached your grok bot usage limit|resets in \d+\s*days/i.test(blob) && /grok bot/i.test(blob)) {
     return "grok-bot-chat-banner";
@@ -267,7 +269,12 @@ function applyMonthlyReset(text: string, capturedAt: string, snap: TankSnapshot)
   snap.periodStart = start.toISOString();
 }
 
-export function parseUsageText(text: string, capturedAt: string, fileName = ""): ParsedUsage {
+export function parseUsageText(
+  text: string,
+  capturedAt: string,
+  fileName = "",
+  settings: AppSettings = DEFAULT_SETTINGS,
+): ParsedUsage {
   const surface = classifySurface(text, fileName);
   const notes: string[] = [];
   const tanks: Partial<Record<TankId, TankSnapshot>> = {};
@@ -275,6 +282,18 @@ export function parseUsageText(text: string, capturedAt: string, fileName = ""):
   if (surface === "grok-com") {
     notes.push(GROK_COM_REJECT_NOTE);
     return { surface, tanks, notes, fillsTank: false };
+  }
+  if (surface === "x-grok-windows") {
+    const xTanks = parseXGrokWindows(text, capturedAt, settings.xPlan, {
+      light: settings.xLightCap,
+      medium: settings.xMediumCap,
+      heavy: settings.xHeavyCap,
+    });
+    Object.assign(tanks, xTanks);
+    notes.push(
+      "Classified as Grok on X (Light / Medium / Heavy request windows). These are not Cursor tanks and not grok.com SuperGrok week. Caps are requests per ~2 hours.",
+    );
+    return { surface, tanks, notes, fillsTank: xGrokFilled(tanks) };
   }
   if (surface === "grok-bot-routines") {
     notes.push("Routine run history is the last 20 runs + request IDs, not cents. It does not fill a tank.");
@@ -371,9 +390,19 @@ export function parseUsageText(text: string, capturedAt: string, fileName = ""):
     notes.push("Usage-event CSV/list is per-request cost. This gauge rolls Included spend into Bot / Cursor Models / Other Models mix-by-model, and Usage-based/On-Demand Kind into tank 4. Unpublished Bot/Cursor Models % still need Settings or Spending.");
   }
 
+  const xTanks = parseXGrokWindows(text, capturedAt, settings.xPlan, {
+    light: settings.xLightCap,
+    medium: settings.xMediumCap,
+    heavy: settings.xHeavyCap,
+  });
+  if (xGrokFilled(xTanks)) {
+    Object.assign(tanks, xTanks);
+    notes.push("Also filled X Grok Light / Medium / Heavy request windows (separate from Cursor).");
+  }
+
   const fillsTank = TANK_IDS.some((id) => {
     const s = tanks[id];
-    return s && (s.percentUsed != null || s.spendUsd != null || s.mixCents || s.tokenTotals);
+    return s && (s.percentUsed != null || s.spendUsd != null || s.mixCents || s.tokenTotals || s.requestUsed != null);
   });
 
   return { surface, tanks, notes, fillsTank, planHint, onDemandDisabled };

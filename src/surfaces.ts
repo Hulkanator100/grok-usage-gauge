@@ -12,6 +12,7 @@ export type SurfaceId =
   | "cursor-cloud-agent"
   | "cursor-bugbot"
   | "grok-com"
+  | "x-grok-windows"
   | "unknown";
 
 export interface SurfaceGuide {
@@ -141,6 +142,15 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
     drop: "Recognized and rejected: Weekly SuperGrok Limit, Extra Usage Credits, Auto Top-Up, Buy Credits. Do not mix into these four tanks. Use Cursor Grok Bot Settings → Usage instead.",
     tank: "Out of v1 — no tank",
     fillsTank: false,
+  },
+  {
+    id: "x-grok-windows",
+    title: "X — Grok Light / Medium / Heavy (2-hour requests)",
+    history:
+      "Grok on x.com / the X app counts Light (Fast/default), Medium (Think), and Heavy as three separate request grants that refill on a rolling ~2 hour window. That is not Cursor Grok Bot week, not Cursor Models, and not grok.com SuperGrok weekly %. X developer API GET /2/usage/credits is a different prepaid-dollar meter and stays out of these tanks.",
+    drop: "Screenshot or paste of the X Grok usage strip: Light 42/50, Medium 11/20, Heavy 2/10, Resets in 1 hour 18 minutes. Do not drop this onto Cursor tanks.",
+    tank: "X Grok Light, Medium, Heavy — never merged with Cursor",
+    fillsTank: true,
   },
 ];
 

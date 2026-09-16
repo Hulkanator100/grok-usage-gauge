@@ -6,7 +6,7 @@ import {
 } from "./parseUsageCsv";
 import { parseUsageText, readingFromParsed } from "./parseUsageText";
 import { parseStoredStateJson } from "./storage";
-import type { Reading, StoredState } from "./types";
+import { DEFAULT_SETTINGS, type AppSettings, type Reading, type StoredState } from "./types";
 
 const IMAGE_RE = /^image\//;
 const TEXTISH = /^(text\/|application\/(json|csv|xml))/;
@@ -106,7 +106,11 @@ export async function ocrImage(file: File): Promise<string> {
   return result.data.text ?? "";
 }
 
-export async function ingestFile(file: File, capturedAt: string): Promise<IngestResult> {
+export async function ingestFile(
+  file: File,
+  capturedAt: string,
+  settings: AppSettings = DEFAULT_SETTINGS,
+): Promise<IngestResult> {
   if (isUnfinishedDownload(file)) {
     return {
       readings: [],
@@ -190,7 +194,7 @@ export async function ingestFile(file: File, capturedAt: string): Promise<Ingest
     }
   }
 
-  const parsed = parseUsageText(extracted, capturedAt, file.name);
+  const parsed = parseUsageText(extracted, capturedAt, file.name, settings);
   const notes = [...parsed.notes];
   let readings: Reading[] = [];
 
@@ -207,7 +211,7 @@ export async function ingestFile(file: File, capturedAt: string): Promise<Ingest
     ];
   } else {
     try {
-      readings = parsePaste(extracted, capturedAt).map((r) => ({
+      readings = parsePaste(extracted, capturedAt, settings).map((r) => ({
         ...r,
         source: isImage ? ("screenshot" as const) : ("drop" as const),
         surface: parsed.surface,
@@ -225,10 +229,14 @@ export async function ingestFile(file: File, capturedAt: string): Promise<Ingest
   return { readings, extracted, notes, error: undefined, planHint: parsed.planHint };
 }
 
-export async function ingestFiles(files: File[], capturedAt: string): Promise<IngestResult> {
+export async function ingestFiles(
+  files: File[],
+  capturedAt: string,
+  settings: AppSettings = DEFAULT_SETTINGS,
+): Promise<IngestResult> {
   const combined: IngestResult = { readings: [], extracted: "", notes: [] };
   for (const file of files) {
-    const one = await ingestFile(file, capturedAt);
+    const one = await ingestFile(file, capturedAt, settings);
     if (one.error) {
       combined.error = combined.error ? `${combined.error} ${one.error}` : one.error;
     }

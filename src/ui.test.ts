@@ -22,7 +22,7 @@ describe("analog fuel needle", () => {
     const needles = [...html.matchAll(/class="needle-g" transform="rotate\(([-0-9.]+) 100 100\)"/g)].map((m) =>
       Number(m[1]),
     );
-    expect(needles).toHaveLength(4);
+    expect(needles).toHaveLength(7);
     expect(needles[0]).toBeCloseTo(fuelNeedleDeg(67.9), 1);
     expect(needles[3]).toBeCloseTo(90, 1);
     expect(needles[0]).toBeLessThan(needles[1]);
@@ -38,9 +38,10 @@ describe("history instrument", () => {
       capturedAtLocal: "2026-09-16T18:00",
     });
     expect(html).toContain("History instrument");
-    expect(html).toContain("Four remaining-fuel traces over the captured period");
+    expect(html).toContain("Cursor remaining-fuel traces over the captured period");
+    expect(html).toContain("X Grok request windows");
     expect(html).toContain('class="spark"');
-    expect(html.match(/class="instrument-card"/g)?.length).toBe(4);
+    expect(html.match(/class="instrument-card"/g)?.length).toBe(7);
     const accel = renderHistoryInstrument(
       buildAcceleratingWeek(new Date("2026-09-16T18:00:00Z")),
       DEFAULT_SETTINGS,

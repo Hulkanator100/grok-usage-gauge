@@ -4,6 +4,7 @@ import { parsePaste, sampleDashboardPaste } from "./parsePaste";
 import { parseUsageEventsCsv } from "./parseUsageCsv";
 import { clearState, loadState, saveState } from "./storage";
 import type { LastImport, StoredState } from "./types";
+import { X_GROK_CAPS, type XGrokPlan } from "./types";
 import { fromDatetimeLocalValue, renderApp, toDatetimeLocalValue } from "./ui";
 
 let state: StoredState = loadState();
@@ -122,7 +123,7 @@ async function handleFiles(list: FileList | File[]) {
     busy = `Reading ${files.map((f) => f.name).join(", ")}…`;
     render();
     try {
-      const result = await ingestFiles(files, capturedIso());
+      const result = await ingestFiles(files, capturedIso(), state.settings);
       paste = result.extracted || paste;
       if (result.restored) {
         state = result.restored;
@@ -170,6 +171,10 @@ function bind() {
   const planEl = document.getElementById("plan") as HTMLSelectElement | null;
   const customEl = document.getElementById("custom-other") as HTMLInputElement | null;
   const capEl = document.getElementById("ondemand-cap") as HTMLInputElement | null;
+  const xPlanEl = document.getElementById("x-plan") as HTMLSelectElement | null;
+  const xLightEl = document.getElementById("x-light-cap") as HTMLInputElement | null;
+  const xMediumEl = document.getElementById("x-medium-cap") as HTMLInputElement | null;
+  const xHeavyEl = document.getElementById("x-heavy-cap") as HTMLInputElement | null;
   const drop = document.getElementById("drop-zone");
   const fileInput = document.getElementById("file-input") as HTMLInputElement | null;
 
@@ -197,6 +202,27 @@ function bind() {
     persist();
     render();
   });
+  xPlanEl?.addEventListener("change", () => {
+    const plan = xPlanEl.value as XGrokPlan;
+    state.settings.xPlan = plan;
+    const caps = X_GROK_CAPS[plan];
+    state.settings.xLightCap = caps.light;
+    state.settings.xMediumCap = caps.medium;
+    state.settings.xHeavyCap = caps.heavy;
+    persist();
+    render();
+  });
+  const bindCap = (el: HTMLInputElement | null, key: "xLightCap" | "xMediumCap" | "xHeavyCap") => {
+    el?.addEventListener("change", () => {
+      const n = Number(el.value);
+      state.settings[key] = Number.isFinite(n) && n > 0 ? n : 1;
+      persist();
+      render();
+    });
+  };
+  bindCap(xLightEl, "xLightCap");
+  bindCap(xMediumEl, "xMediumCap");
+  bindCap(xHeavyEl, "xHeavyCap");
 
   fillOriginBanner();
   fileInput?.addEventListener("change", () => onFilePicked(fileInput));
@@ -218,7 +244,7 @@ function bind() {
     error = undefined;
     notice = undefined;
     try {
-      const readings = parsePaste(pasteEl?.value ?? paste, capturedIso());
+      const readings = parsePaste(pasteEl?.value ?? paste, capturedIso(), state.settings);
       state.readings = [...state.readings, ...readings];
       persist();
       notice = `Saved ${readings.length} reading${readings.length === 1 ? "" : "s"} locally.`;

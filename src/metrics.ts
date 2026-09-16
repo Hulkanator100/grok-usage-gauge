@@ -31,9 +31,10 @@ export function remainingUsd(args: {
   return Math.max(0, grant - args.spendUsd);
 }
 
-export function inferPeriodStart(periodEnd: Date, kind: "week" | "month", periodStart?: Date): Date {
+export function inferPeriodStart(periodEnd: Date, kind: "week" | "month" | "window2h", periodStart?: Date): Date {
   if (periodStart) return periodStart;
   if (kind === "week") return new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+  if (kind === "window2h") return new Date(periodEnd.getTime() - 2 * 60 * 60 * 1000);
   const start = new Date(periodEnd.getTime());
   start.setUTCMonth(start.getUTCMonth() - 1);
   return start;
@@ -125,23 +126,36 @@ export interface TankMetrics {
   hardStop: boolean;
   mixCents?: Record<string, number | undefined>;
   tokenTotals?: { input?: number; output?: number; cacheRead?: number; total?: number };
+  requestUsed?: number;
+  requestCap?: number;
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const WINDOW_2H_MS = 2 * 60 * 60 * 1000;
+
+export function percentFromRequests(requestUsed?: number, requestCap?: number): number | undefined {
+  if (requestUsed == null || requestCap == null || requestCap <= 0) return undefined;
+  return (requestUsed / requestCap) * 100;
+}
+
+type SnapIn = {
+  percentUsed?: number;
+  periodStart?: string;
+  periodEnd?: string;
+  spendUsd?: number;
+  capUsd?: number;
+  requestUsed?: number;
+  requestCap?: number;
+  mixCents?: Record<string, number | undefined>;
+  tokenTotals?: { input?: number; output?: number; cacheRead?: number; total?: number };
+};
 
 export function computeTankMetrics(args: {
-  kind: "week" | "month" | "cap";
-  snapshots: Array<{ capturedAt: string; snap: {
-    percentUsed?: number;
-    periodStart?: string;
-    periodEnd?: string;
-    spendUsd?: number;
-    capUsd?: number;
-    mixCents?: Record<string, number | undefined>;
-    tokenTotals?: { input?: number; output?: number; cacheRead?: number; total?: number };
-  } }>;
+  kind: "week" | "month" | "cap" | "window2h";
+  snapshots: Array<{ capturedAt: string; snap: SnapIn }>;
   now: Date;
   fallbackCapUsd?: number;
+  fallbackRequestCap?: number;
 }): TankMetrics {
   const ordered = [...args.snapshots].sort(
     (a, b) => new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime(),
@@ -151,6 +165,8 @@ export function computeTankMetrics(args: {
 
   const snap = latest.snap;
   const capUsd = snap.capUsd ?? args.fallbackCapUsd;
+  const requestCap = snap.requestCap ?? args.fallbackRequestCap;
+  const requestUsed = snap.requestUsed;
   const hardStop = args.kind === "cap" && capUsd === 0;
 
   const derivePctFromCap = (kind: typeof args.kind, cap: number | undefined, spend: number | undefined) => {
@@ -159,7 +175,10 @@ export function computeTankMetrics(args: {
     return undefined;
   };
 
-  let percentUsed = snap.percentUsed ?? derivePctFromCap(args.kind, capUsd, snap.spendUsd);
+  let percentUsed =
+    snap.percentUsed ??
+    percentFromRequests(requestUsed, requestCap) ??
+    derivePctFromCap(args.kind, capUsd, snap.spendUsd);
   if (hardStop) {
     percentUsed = (snap.spendUsd ?? 0) > 0 ? 100 : 0;
   }
@@ -167,10 +186,14 @@ export function computeTankMetrics(args: {
   let periodEnd = snap.periodEnd ? new Date(snap.periodEnd) : undefined;
   let periodStart = snap.periodStart ? new Date(snap.periodStart) : undefined;
   if (periodEnd && !periodStart) {
-    periodStart = inferPeriodStart(periodEnd, args.kind === "week" ? "week" : "month");
+    const startKind = args.kind === "week" ? "week" : args.kind === "window2h" ? "window2h" : "month";
+    periodStart = inferPeriodStart(periodEnd, startKind);
   }
   if (periodStart && !periodEnd && args.kind === "week") {
     periodEnd = new Date(periodStart.getTime() + WEEK_MS);
+  }
+  if (periodStart && !periodEnd && args.kind === "window2h") {
+    periodEnd = new Date(periodStart.getTime() + WINDOW_2H_MS);
   }
 
   const pace =
@@ -181,7 +204,10 @@ export function computeTankMetrics(args: {
   const points: Point[] = [];
   for (const row of ordered) {
     const cap = row.snap.capUsd ?? capUsd;
-    const p = row.snap.percentUsed ?? derivePctFromCap(args.kind, cap, row.snap.spendUsd);
+    const p =
+      row.snap.percentUsed ??
+      percentFromRequests(row.snap.requestUsed, row.snap.requestCap ?? requestCap) ??
+      derivePctFromCap(args.kind, cap, row.snap.spendUsd);
     if (p == null) continue;
     points.push({ t: new Date(row.capturedAt).getTime(), p });
   }
@@ -219,5 +245,7 @@ export function computeTankMetrics(args: {
     hardStop,
     mixCents: snap.mixCents,
     tokenTotals: snap.tokenTotals,
+    requestUsed,
+    requestCap,
   };
 }
