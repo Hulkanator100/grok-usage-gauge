@@ -17,6 +17,7 @@ export function loadState(): StoredState {
       version: 1,
       readings: parsed.readings,
       settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
+      lastImport: parsed.lastImport,
     };
   } catch {
     return { version: 1, readings: [], settings: { ...DEFAULT_SETTINGS } };

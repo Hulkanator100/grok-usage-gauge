@@ -1,6 +1,6 @@
 import { SURFACE_GUIDE } from "./surfaces";
 import { computeTankMetrics, otherModelsCapUsd, type TankMetrics } from "./metrics";
-import type { AppSettings, Reading, TankId } from "./types";
+import type { AppSettings, LastImport, Reading, TankId } from "./types";
 import { TANK_IDS, TANK_META } from "./types";
 import { sortedReadings } from "./storage";
 
@@ -139,12 +139,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics): string {
   `;
 }
 
-export interface LastImport {
-  names: string;
-  bytes: number;
-  extracted: string;
-  summary: string;
-}
+export type { LastImport } from "./types";
 
 export function renderApp(args: {
   readings: Reading[];
@@ -180,6 +175,18 @@ export function renderApp(args: {
       <p class="eyebrow">Local · four tanks · never one bar</p>
       <h1>Grok Usage Gauge</h1>
       <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills spend (mix cents for grok-bot-*); Bot/Cursor Models stay spend-only unless % is known; Other Models / on-demand % use plan/cap. Chrome <code>.crdownload</code> leftovers are empty — re-export. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
+      ${
+        args.lastImport
+          ? `<div class="ingest-banner" role="status">
+        <strong>Your last import ran.</strong>
+        ${escapeHtml(args.lastImport.names)} · ${args.lastImport.bytes.toLocaleString()} bytes.
+        ${escapeHtml(args.lastImport.summary)}
+        Empty tanks below still mean that file had no % or $ for that pool (defaults were not reset except where a reading was saved).
+      </div>`
+          : args.readings.length
+            ? `<div class="ingest-banner" role="status"><strong>Stored readings are showing</strong> (${args.readings.length}). Scroll to Timestamped readings to see CSV vs screenshot. Empty tanks were not overwritten.</div>`
+            : `<div class="ingest-banner idle">No files ingested yet. Tanks that say “—” are still empty defaults.</div>`
+      }
     </header>
 
     <section class="bay">

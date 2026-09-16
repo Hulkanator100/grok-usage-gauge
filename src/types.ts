@@ -75,10 +75,18 @@ export interface AppSettings {
   onDemandCapUsd: number;
 }
 
+export interface LastImport {
+  names: string;
+  bytes: number;
+  extracted: string;
+  summary: string;
+}
+
 export interface StoredState {
   version: 1;
   readings: Reading[];
   settings: AppSettings;
+  lastImport?: LastImport;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {

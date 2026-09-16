@@ -3,8 +3,8 @@ import { ingestFiles } from "./ingestDrop";
 import { parsePaste, sampleDashboardPaste } from "./parsePaste";
 import { parseUsageEventsCsv } from "./parseUsageCsv";
 import { clearState, loadState, saveState } from "./storage";
-import type { StoredState } from "./types";
-import { fromDatetimeLocalValue, renderApp, toDatetimeLocalValue, type LastImport } from "./ui";
+import type { LastImport, StoredState } from "./types";
+import { fromDatetimeLocalValue, renderApp, toDatetimeLocalValue } from "./ui";
 
 let state: StoredState = loadState();
 let paste = "";
@@ -12,10 +12,14 @@ let capturedAtLocal = toDatetimeLocalValue();
 let notice: string | undefined;
 let error: string | undefined;
 let busy: string | undefined;
-let lastImport: LastImport | undefined;
 
 function persist() {
   saveState(state);
+}
+
+function setLastImport(next: LastImport | undefined) {
+  state.lastImport = next;
+  persist();
 }
 
 function capturedIso(): string {
@@ -34,7 +38,7 @@ function render() {
     notice,
     error,
     busy,
-    lastImport,
+    lastImport: state.lastImport,
   });
   bind();
 }
@@ -75,24 +79,24 @@ async function handleFiles(list: FileList | File[]) {
       files = await snapshotFiles(list);
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
-      lastImport = { names: "unreadable", bytes: 0, extracted: "", summary: error };
+      setLastImport({ names: "unreadable", bytes: 0, extracted: "", summary: error });
       render();
       return;
     }
     if (!files.length) {
       error = "Choose files did not receive a file. Pick a screenshot, .txt, .json, or a finished .csv.";
-      lastImport = { names: "none", bytes: 0, extracted: "", summary: error };
+      setLastImport({ names: "none", bytes: 0, extracted: "", summary: error });
       render();
       return;
     }
     error = undefined;
     notice = undefined;
-    lastImport = {
+    setLastImport({
       names: files.map((f) => f.name).join(", "),
       bytes: files.reduce((n, f) => n + f.size, 0),
       extracted: "",
       summary: "Reading locally…",
-    };
+    });
     busy = `Reading ${files.map((f) => f.name).join(", ")}…`;
     render();
     try {
@@ -102,17 +106,17 @@ async function handleFiles(list: FileList | File[]) {
         state.readings = [...state.readings, ...result.readings];
         persist();
       }
-      lastImport = summarizeImport(files, result);
-      notice = lastImport.summary;
+      setLastImport(summarizeImport(files, result));
+      notice = state.lastImport?.summary;
       error = result.error;
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
-      lastImport = {
+      setLastImport({
         names: files.map((f) => f.name).join(", "),
         bytes: files.reduce((n, f) => n + f.size, 0),
         extracted: "",
         summary: error,
-      };
+      });
     } finally {
       busy = undefined;
       render();
@@ -226,7 +230,6 @@ function bind() {
     state = clearState();
     paste = "";
     capturedAtLocal = toDatetimeLocalValue();
-    lastImport = undefined;
     notice = "Local data cleared.";
     error = undefined;
     render();
@@ -250,13 +253,13 @@ async function loadBundledCsv() {
     state.readings = readings;
     persist();
     paste = text;
-    lastImport = {
+    setLastImport({
       names: "usage-events-2026-09-16.csv",
       bytes: new TextEncoder().encode(text).length,
       extracted: text.slice(0, 4000),
       summary: `Loaded ${readings.length} daily cumulative readings from the bundled Sep 2026 usage-events CSV.`,
-    };
-    notice = lastImport.summary;
+    });
+    notice = state.lastImport?.summary;
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
   } finally {

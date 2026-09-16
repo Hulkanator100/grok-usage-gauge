@@ -233,6 +233,20 @@ button.danger { background: #6b2a22; color: #ffd8d1; }
   border-radius: 12px;
   background: #151910;
 }
+.ingest-banner {
+  margin: 0.9rem 0 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  background: #1b2414;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.ingest-banner.idle {
+  border-color: var(--line);
+  background: var(--bg-2);
+  color: var(--muted);
+}
 .ingest-output h3 { margin: 0 0 0.4rem; font-size: 0.95rem; }
 .ingest-output pre.extract {
   max-height: 12rem;
