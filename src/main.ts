@@ -237,7 +237,20 @@ function bind() {
   fillOriginBanner();
   fileInput?.addEventListener("change", () => onFilePicked(fileInput));
   fileInput?.addEventListener("input", () => onFilePicked(fileInput));
-  document.getElementById("choose-files")?.addEventListener("click", () => fileInput?.click());
+  document.getElementById("choose-files")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    fileInput?.click();
+  });
+
+  drop?.addEventListener("click", (e) => {
+    if ((e.target as HTMLElement).closest("button, input, a, summary")) return;
+    fileInput?.click();
+  });
+  drop?.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    fileInput?.click();
+  });
 
   drop?.addEventListener("dragover", (e) => {
     e.preventDefault();

@@ -518,42 +518,62 @@ export function renderApp(args: {
     ${renderEstimateInstrument(args.readings, args.settings)}
 
     <section class="console">
-      <div class="panel">
+      <div class="panel save-panel">
         <h2>Save a reading</h2>
-        <label>Captured at
-          <input id="captured-at" type="datetime-local" value="${args.capturedAtLocal}" />
-        </label>
-        <div id="drop-zone" class="drop-zone">
-          <strong>Drop screenshots or usage files</strong>
-          <p>png / jpg / webp, copied <code>/usage</code> text, Settings → Usage, Spending, or a finished usage-events <code>.csv</code>. Empty Chrome <code>.crdownload</code> files are rejected. Paste an image with Ctrl+V.</p>
-          <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.csv,text/csv,.txt,.md,.json,.log" multiple />
-          <button type="button" id="choose-files">Read chosen files</button>
-          <p class="chosen">${args.lastImport ? escapeHtml(args.lastImport.names) : "No file chosen yet"}</p>
-        </div>
-        ${args.busy ? `<p class="notice" role="status">${escapeHtml(args.busy)}</p>` : ""}
-        ${
-          args.lastImport
-            ? `<div id="ingest-output" class="ingest-output" role="status">
-          <h3>Last file output</h3>
-          <p><strong>${escapeHtml(args.lastImport.names)}</strong> · ${args.lastImport.bytes.toLocaleString()} bytes</p>
-          <p>${escapeHtml(args.lastImport.summary)}</p>
-          ${
-            args.lastImport.extracted
-              ? `<pre class="extract">${escapeHtml(args.lastImport.extracted.slice(0, 4000))}</pre>`
-              : `<p class="muted">No text extracted from this file.</p>`
-          }
-        </div>`
-            : ""
-        }
-        <label>Paste (JSON, dashboard text, CLI /usage, or OCR text)
-          <textarea id="paste" rows="14" placeholder="Drop a screenshot or paste Weekly usage 61%…">${escapeHtml(args.paste)}</textarea>
-        </label>
-        <div class="row">
-          <button type="button" id="save-paste">Save pasted reading</button>
-          <button type="button" id="fill-sample" class="ghost">Fill sample paste</button>
-        </div>
+        <p class="slide-hint">Files ingest as soon as you drop or choose them. Pasted text needs the Save button. Nothing leaves this browser.</p>
         ${args.error ? `<p class="error" role="alert">${escapeHtml(args.error)}</p>` : ""}
         ${args.notice ? `<p class="notice">${escapeHtml(args.notice)}</p>` : ""}
+        ${args.busy ? `<p class="notice" role="status">${escapeHtml(args.busy)}</p>` : ""}
+
+        <ol class="save-steps">
+          <li class="save-step">
+            <h3>1 · Timestamp</h3>
+            <label class="select-field">When this screenshot or paste was taken
+              <input id="captured-at" type="datetime-local" value="${args.capturedAtLocal}" />
+            </label>
+            <p class="slide-hint">CSV rows keep the dates inside the file. Screenshots and paste use this clock.</p>
+          </li>
+          <li class="save-step">
+            <h3>2 · Drop or choose a file</h3>
+            <div id="drop-zone" class="drop-zone" role="button" tabindex="0">
+              <p class="drop-lead"><strong>Drop here</strong> or choose — ingest starts immediately.</p>
+              <ul class="type-chips">
+                <li>Spending / Settings screenshot</li>
+                <li>usage-events .csv</li>
+                <li>.txt / .json</li>
+              </ul>
+              <input id="file-input" class="file-input-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.csv,text/csv,.txt,.md,.json,.log" multiple />
+              <button type="button" id="choose-files">Choose files</button>
+              <p class="chosen">${args.lastImport ? escapeHtml(args.lastImport.names) : "No file chosen yet"}</p>
+              <p class="slide-hint">Rejects empty Chrome <code>.crdownload</code>. grok.com SuperGrok Usage is not a Cursor tank. Ctrl+V an image anywhere on this page.</p>
+            </div>
+            ${
+              args.lastImport
+                ? `<div id="ingest-output" class="ingest-output" role="status">
+              <h3>Last file result</h3>
+              <p><strong>${escapeHtml(args.lastImport.names)}</strong> · ${args.lastImport.bytes.toLocaleString()} bytes</p>
+              <p>${escapeHtml(args.lastImport.summary)}</p>
+              ${
+                args.lastImport.extracted
+                  ? `<details class="extract-details"><summary>Extracted text</summary><pre class="extract">${escapeHtml(args.lastImport.extracted.slice(0, 4000))}</pre></details>`
+                  : `<p class="muted">No text extracted from this file.</p>`
+              }
+            </div>`
+                : ""
+            }
+          </li>
+          <li class="save-step">
+            <h3>3 · Or paste text</h3>
+            <label class="select-field">Dashboard / CLI / OCR text
+              <textarea id="paste" rows="7" placeholder="Weekly usage 61% … or Light 42/100">${escapeHtml(args.paste)}</textarea>
+            </label>
+            <div class="row paste-actions">
+              <button type="button" id="save-paste">Save pasted reading</button>
+              <button type="button" id="fill-sample" class="ghost">Fill sample paste</button>
+            </div>
+            <p class="slide-hint">Fill sample only loads the box. Save pasted reading writes tanks.</p>
+          </li>
+        </ol>
       </div>
       <div class="panel controls-panel">
         <h2>Local controls</h2>

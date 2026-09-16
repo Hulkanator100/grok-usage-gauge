@@ -72,6 +72,12 @@ describe("local controls sliders", () => {
       capturedAtLocal: "2026-09-16T18:00",
     });
     expect(html).toContain("sample-io");
+    expect(html).toContain("save-panel");
+    expect(html).toContain("Choose files");
+    expect(html).toContain("1 · Timestamp");
+    expect(html).toContain("2 · Drop or choose a file");
+    expect(html).toContain("3 · Or paste text");
+    expect(html).toContain("file-input-hidden");
     expect(html).toContain("Inputs · write the tanks");
     expect(html).toContain("Outputs · copy or wipe this browser");
     expect(html).toContain("io-k");
