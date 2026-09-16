@@ -274,6 +274,99 @@ a { color: var(--amber); }
   padding: 1rem;
 }
 
+.controls-panel h2 { margin-top: 0; }
+.control-status {
+  margin: 0 0 1rem;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.control-block {
+  margin: 0 0 1rem;
+  padding: 0.85rem 0.9rem 1rem;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--void-lift) 0%, var(--void) 100%);
+}
+.control-block h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.control-block .row { margin-top: 0.55rem; }
+.select-field {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.65rem 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--dim);
+}
+.plan-readout {
+  margin: 0 0 0.85rem;
+  color: var(--dim);
+  font-size: 0.88rem;
+}
+.plan-readout strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.slide-field { margin: 0.7rem 0 0.15rem; }
+.slide-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.slide-head label {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.slide-head output {
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.slide-hint {
+  margin: 0.2rem 0 0.45rem;
+  color: var(--dim);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  background:
+    linear-gradient(90deg, var(--amber) 0 var(--fill, 0%), var(--hair) var(--fill, 0%) 100%);
+  cursor: pointer;
+}
+input[type="range"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--amber);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--amber);
+  box-shadow: 0 0 8px rgba(232, 160, 23, 0.45);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--amber);
+}
+
 label {
   display: grid;
   gap: 0.3rem;

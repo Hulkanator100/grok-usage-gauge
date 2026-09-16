@@ -1,7 +1,7 @@
 import { SURFACE_GUIDE } from "./surfaces";
 import { computeTankMetrics, otherModelsCapUsd, type TankMetrics } from "./metrics";
 import type { AppSettings, LastImport, Reading, TankId } from "./types";
-import { CURSOR_TANK_IDS, isXGrokTank, TANK_IDS, TANK_META, X_GROK_CAPS, X_GROK_TANK_IDS } from "./types";
+import { CURSOR_TANK_IDS, isXGrokTank, OTHER_MODELS_INCLUDED_USD, TANK_IDS, TANK_META, X_GROK_CAPS, X_GROK_TANK_IDS } from "./types";
 import { sortedReadings } from "./storage";
 import { historyPoints, polylineRemaining, timeWindow, type HistoryPoint } from "./chart";
 import { estimateAllTanks, polylineValues, type TankEstimate } from "./estimate";
@@ -517,53 +517,106 @@ export function renderApp(args: {
         ${args.error ? `<p class="error" role="alert">${escapeHtml(args.error)}</p>` : ""}
         ${args.notice ? `<p class="notice">${escapeHtml(args.notice)}</p>` : ""}
       </div>
-      <div class="panel">
+      <div class="panel controls-panel">
         <h2>Local controls</h2>
-        <p>${n} stored reading${n === 1 ? "" : "s"}. Burn / run-out needs 2+. Acceleration needs 3.</p>
-        <div class="row">
-          <button type="button" id="load-example">Load example week</button>
-          <button type="button" id="load-accel">Load accelerating week</button>
-          <button type="button" id="load-sample-csv">Load bundled usage-events CSV</button>
-          <button type="button" id="export-json" class="ghost">Download history JSON</button>
-          <button type="button" id="restore-json" class="ghost">Restore history JSON</button>
-          <input id="restore-json-input" type="file" accept="application/json,.json" hidden />
-          <button type="button" id="clear-data" class="danger">Clear local data</button>
+        <p class="control-status">${n} stored reading${n === 1 ? "" : "s"}. Empty-at needs 2. Acceleration needs 3. Unpublished estimate needs spend+% or used/cap.</p>
+
+        <div class="control-block">
+          <h3>Sample data</h3>
+          <p class="slide-hint">Load canned readings, or keep a private JSON copy on this PC.</p>
+          <div class="row">
+            <button type="button" id="load-example">Load example week</button>
+            <button type="button" id="load-accel">Load accelerating week</button>
+            <button type="button" id="load-sample-csv">Load bundled usage-events CSV</button>
+          </div>
+          <div class="row">
+            <button type="button" id="export-json" class="ghost">Download history JSON</button>
+            <button type="button" id="restore-json" class="ghost">Restore history JSON</button>
+            <input id="restore-json-input" type="file" accept="application/json,.json" hidden />
+            <button type="button" id="clear-data" class="danger">Clear local data</button>
+          </div>
         </div>
-        <label>Cursor plan (Other Models included $)
-          <select id="plan">
-            <option value="pro" ${args.settings.plan === "pro" ? "selected" : ""}>Pro ~$20</option>
-            <option value="proPlus" ${args.settings.plan === "proPlus" ? "selected" : ""}>Pro+ ~$70</option>
-            <option value="ultra" ${args.settings.plan === "ultra" ? "selected" : ""}>Ultra ~$400</option>
-            <option value="custom" ${args.settings.plan === "custom" ? "selected" : ""}>Custom</option>
-          </select>
-        </label>
-        <label>Custom Other Models included USD
-          <input id="custom-other" type="number" min="0" step="1" value="${args.settings.customOtherModelsUsd}" />
-        </label>
-        <label>On-demand monthly cap USD ($0 = hard stop)
-          <input id="ondemand-cap" type="number" min="0" step="1" value="${args.settings.onDemandCapUsd}" />
-        </label>
-        <label>X Grok plan (2-hour request fallback caps)
-          <select id="x-plan">
-            <option value="free" ${args.settings.xPlan === "free" ? "selected" : ""}>X Free · Light ${X_GROK_CAPS.free.light} / Medium ${X_GROK_CAPS.free.medium} / Heavy ${X_GROK_CAPS.free.heavy}</option>
-            <option value="premium" ${args.settings.xPlan === "premium" ? "selected" : ""}>X Premium · Light ${X_GROK_CAPS.premium.light} / Medium ${X_GROK_CAPS.premium.medium} / Heavy ${X_GROK_CAPS.premium.heavy}</option>
-            <option value="premiumPlus" ${args.settings.xPlan === "premiumPlus" ? "selected" : ""}>X Premium+ · Light ${X_GROK_CAPS.premiumPlus.light} / Medium ${X_GROK_CAPS.premiumPlus.medium} / Heavy ${X_GROK_CAPS.premiumPlus.heavy}</option>
-          </select>
-        </label>
-        <label>X Light requests / 2h
-          <input id="x-light-cap" type="number" min="1" step="1" value="${args.settings.xLightCap}" />
-        </label>
-        <label>X Medium requests / 2h
-          <input id="x-medium-cap" type="number" min="1" step="1" value="${args.settings.xMediumCap}" />
-        </label>
-        <label>X Heavy requests / 2h
-          <input id="x-heavy-cap" type="number" min="1" step="1" value="${args.settings.xHeavyCap}" />
-        </label>
-        <ul class="out-of-v1">
-          <li>Out of v1 (no tanks): grok.com SuperGrok week, xAI API prepaid ticks, X developer API <code>GET /2/usage/credits</code>.</li>
-          <li>Cursor tab completions are not a tank. Grok-on-X Light/Medium/Heavy <em>are</em> tanks (requests / 2h).</li>
-          <li>Charge order on Cursor: Bot week → promo credits → paid on-demand.</li>
-        </ul>
+
+        <div class="control-block">
+          <h3>Cursor month</h3>
+          <p class="slide-hint">Other Models included $ follows the plan. On-demand is a monthly USD cap; $0 is a hard stop.</p>
+          <label class="select-field">Plan
+            <select id="plan">
+              <option value="pro" ${args.settings.plan === "pro" ? "selected" : ""}>Pro · Other Models ${fmtUsd(OTHER_MODELS_INCLUDED_USD.pro)}</option>
+              <option value="proPlus" ${args.settings.plan === "proPlus" ? "selected" : ""}>Pro+ · Other Models ${fmtUsd(OTHER_MODELS_INCLUDED_USD.proPlus)}</option>
+              <option value="ultra" ${args.settings.plan === "ultra" ? "selected" : ""}>Ultra · Other Models ${fmtUsd(OTHER_MODELS_INCLUDED_USD.ultra)}</option>
+              <option value="custom" ${args.settings.plan === "custom" ? "selected" : ""}>Custom Other Models $</option>
+            </select>
+          </label>
+          ${
+            args.settings.plan === "custom"
+              ? sliderField({
+                  id: "custom-other",
+                  label: "Other Models included",
+                  hint: "Public included $ for Claude / GPT / etc. this billing cycle.",
+                  min: 0,
+                  max: 400,
+                  step: 5,
+                  value: args.settings.customOtherModelsUsd,
+                  display: formatUsdCap(args.settings.customOtherModelsUsd),
+                })
+              : `<p class="plan-readout">Other Models included <strong>${fmtUsd(OTHER_MODELS_INCLUDED_USD[args.settings.plan])}</strong></p>`
+          }
+          ${sliderField({
+            id: "ondemand-cap",
+            label: "On-demand monthly cap",
+            hint: "Paid overflow after included pools. Slide to $0 for a hard stop.",
+            min: 0,
+            max: 200,
+            step: 5,
+            value: args.settings.onDemandCapUsd,
+            display: formatUsdCap(args.settings.onDemandCapUsd, true),
+          })}
+        </div>
+
+        <div class="control-block">
+          <h3>X Grok · 2-hour windows</h3>
+          <p class="slide-hint">Fallback request caps until a paste of 42/100 overrides them. Separate from Cursor tanks.</p>
+          <label class="select-field">X plan
+            <select id="x-plan">
+              <option value="free" ${args.settings.xPlan === "free" ? "selected" : ""}>Free · L ${X_GROK_CAPS.free.light} · M ${X_GROK_CAPS.free.medium} · H ${X_GROK_CAPS.free.heavy}</option>
+              <option value="premium" ${args.settings.xPlan === "premium" ? "selected" : ""}>Premium · L ${X_GROK_CAPS.premium.light} · M ${X_GROK_CAPS.premium.medium} · H ${X_GROK_CAPS.premium.heavy}</option>
+              <option value="premiumPlus" ${args.settings.xPlan === "premiumPlus" ? "selected" : ""}>Premium+ · L ${X_GROK_CAPS.premiumPlus.light} · M ${X_GROK_CAPS.premiumPlus.medium} · H ${X_GROK_CAPS.premiumPlus.heavy}</option>
+            </select>
+          </label>
+          ${sliderField({
+            id: "x-light-cap",
+            label: "Light / Fast",
+            hint: "Requests per ~2 hours",
+            min: 1,
+            max: 200,
+            step: 1,
+            value: args.settings.xLightCap,
+            display: formatRequestCap(args.settings.xLightCap),
+          })}
+          ${sliderField({
+            id: "x-medium-cap",
+            label: "Medium / Think",
+            hint: "Requests per ~2 hours",
+            min: 1,
+            max: 80,
+            step: 1,
+            value: args.settings.xMediumCap,
+            display: formatRequestCap(args.settings.xMediumCap),
+          })}
+          ${sliderField({
+            id: "x-heavy-cap",
+            label: "Heavy",
+            hint: "Requests per ~2 hours",
+            min: 1,
+            max: 40,
+            step: 1,
+            value: args.settings.xHeavyCap,
+            display: formatRequestCap(args.settings.xHeavyCap),
+          })}
+        </div>
+
+        <p class="out-of-v1">Not tanks: grok.com SuperGrok week, xAI prepaid ticks, X developer <code>GET /2/usage/credits</code>, Cursor tab completions. Cursor charge order: Bot week → promo → on-demand.</p>
       </div>
     </section>
 
@@ -595,6 +648,42 @@ function escapeHtml(s: string): string {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+export function formatUsdCap(n: number, hardStop = false): string {
+  if (hardStop && n === 0) return "$0 hard stop";
+  return fmtUsd(n);
+}
+
+export function formatRequestCap(n: number): string {
+  return `${Math.round(n)} req`;
+}
+
+function sliderFillPct(min: number, max: number, value: number): number {
+  if (max <= min) return 0;
+  return ((value - min) / (max - min)) * 100;
+}
+
+function sliderField(args: {
+  id: string;
+  label: string;
+  hint: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  display: string;
+}): string {
+  const v = Math.min(args.max, Math.max(args.min, args.value));
+  const fill = sliderFillPct(args.min, args.max, v).toFixed(1);
+  return `<div class="slide-field">
+    <div class="slide-head">
+      <label for="${args.id}">${args.label}</label>
+      <output id="${args.id}-out" for="${args.id}">${args.display}</output>
+    </div>
+    <p class="slide-hint">${args.hint}</p>
+    <input id="${args.id}" type="range" min="${args.min}" max="${args.max}" step="${args.step}" value="${v}" style="--fill:${fill}%" />
+  </div>`;
 }
 
 export function toDatetimeLocalValue(d = new Date()): string {

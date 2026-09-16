@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fuelNeedleDeg, renderApp, renderHistoryInstrument } from "./ui";
+import { formatRequestCap, formatUsdCap, fuelNeedleDeg, renderApp, renderHistoryInstrument } from "./ui";
 import { buildAcceleratingWeek, buildExampleWeek } from "./examples";
 import { DEFAULT_SETTINGS } from "./types";
 
@@ -44,6 +44,42 @@ describe("analog fuel needle", () => {
     expect(html).toContain("remain-line");
     expect(html).toContain("— remaining");
     expect(html).toContain("— used");
+  });
+});
+
+describe("local controls sliders", () => {
+  it("shows grouped sliders with live numeral outputs", () => {
+    const html = renderApp({
+      readings: [],
+      settings: DEFAULT_SETTINGS,
+      paste: "",
+      capturedAtLocal: "2026-09-16T18:00",
+    });
+    expect(html).toContain("class=\"controls-panel\"");
+    expect(html).toContain("Cursor month");
+    expect(html).toContain("X Grok · 2-hour windows");
+    expect(html).toContain('id="ondemand-cap" type="range"');
+    expect(html).toContain('id="ondemand-cap-out"');
+    expect(html).toContain("$20.00");
+    expect(html).toContain("100 req");
+    expect(html).not.toContain('id="custom-other"');
+  });
+
+  it("exposes a custom Other Models slider only on the custom plan", () => {
+    const html = renderApp({
+      readings: [],
+      settings: { ...DEFAULT_SETTINGS, plan: "custom", customOtherModelsUsd: 75 },
+      paste: "",
+      capturedAtLocal: "2026-09-16T18:00",
+    });
+    expect(html).toContain('id="custom-other" type="range"');
+    expect(html).toContain("$75.00");
+  });
+
+  it("formats slider numerals for USD caps and request windows", () => {
+    expect(formatUsdCap(0, true)).toBe("$0 hard stop");
+    expect(formatUsdCap(20, true)).toBe("$20.00");
+    expect(formatRequestCap(30)).toBe("30 req");
   });
 });
 

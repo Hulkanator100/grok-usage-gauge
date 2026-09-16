@@ -5,7 +5,7 @@ import { parseUsageEventsCsv } from "./parseUsageCsv";
 import { clearState, loadState, saveState } from "./storage";
 import type { LastImport, StoredState } from "./types";
 import { X_GROK_CAPS, type XGrokPlan } from "./types";
-import { fromDatetimeLocalValue, renderApp, toDatetimeLocalValue } from "./ui";
+import { formatRequestCap, formatUsdCap, fromDatetimeLocalValue, renderApp, toDatetimeLocalValue } from "./ui";
 
 let state: StoredState = loadState();
 let paste = "";
@@ -165,6 +165,26 @@ function onFilePicked(input: HTMLInputElement) {
   void handleFiles(snapshot);
 }
 
+function bindSlider(el: HTMLInputElement | null, apply: (n: number) => void, format: (n: number) => string) {
+  if (!el) return;
+  const out = document.getElementById(`${el.id}-out`);
+  const paint = () => {
+    const n = Number(el.value);
+    const min = Number(el.min);
+    const max = Number(el.max);
+    const fill = max > min ? ((n - min) / (max - min)) * 100 : 0;
+    el.style.setProperty("--fill", `${fill}%`);
+    if (out) out.textContent = format(n);
+  };
+  el.addEventListener("input", paint);
+  el.addEventListener("change", () => {
+    paint();
+    apply(Number(el.value));
+    persist();
+    render();
+  });
+}
+
 function bind() {
   const pasteEl = document.getElementById("paste") as HTMLTextAreaElement | null;
   const capturedEl = document.getElementById("captured-at") as HTMLInputElement | null;
@@ -189,19 +209,12 @@ function bind() {
     persist();
     render();
   });
-  customEl?.addEventListener("change", () => {
-    state.settings.customOtherModelsUsd = Number(customEl.value) || 0;
-    persist();
-    render();
-  });
-  capEl?.addEventListener("change", () => {
-    state.settings.onDemandCapUsd = Number(capEl.value);
-    if (!Number.isFinite(state.settings.onDemandCapUsd) || state.settings.onDemandCapUsd < 0) {
-      state.settings.onDemandCapUsd = 0;
-    }
-    persist();
-    render();
-  });
+  bindSlider(customEl, (n) => {
+    state.settings.customOtherModelsUsd = Number.isFinite(n) && n >= 0 ? n : 0;
+  }, (n) => formatUsdCap(n));
+  bindSlider(capEl, (n) => {
+    state.settings.onDemandCapUsd = Number.isFinite(n) && n >= 0 ? n : 0;
+  }, (n) => formatUsdCap(n, true));
   xPlanEl?.addEventListener("change", () => {
     const plan = xPlanEl.value as XGrokPlan;
     state.settings.xPlan = plan;
@@ -212,17 +225,14 @@ function bind() {
     persist();
     render();
   });
-  const bindCap = (el: HTMLInputElement | null, key: "xLightCap" | "xMediumCap" | "xHeavyCap") => {
-    el?.addEventListener("change", () => {
-      const n = Number(el.value);
+  const bindRequestCap = (el: HTMLInputElement | null, key: "xLightCap" | "xMediumCap" | "xHeavyCap") => {
+    bindSlider(el, (n) => {
       state.settings[key] = Number.isFinite(n) && n > 0 ? n : 1;
-      persist();
-      render();
-    });
+    }, formatRequestCap);
   };
-  bindCap(xLightEl, "xLightCap");
-  bindCap(xMediumEl, "xMediumCap");
-  bindCap(xHeavyEl, "xHeavyCap");
+  bindRequestCap(xLightEl, "xLightCap");
+  bindRequestCap(xMediumEl, "xMediumCap");
+  bindRequestCap(xHeavyEl, "xHeavyCap");
 
   fillOriginBanner();
   fileInput?.addEventListener("change", () => onFilePicked(fileInput));
