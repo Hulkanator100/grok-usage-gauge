@@ -18,7 +18,9 @@ describe("analog fuel needle", () => {
       paste: "",
       capturedAtLocal: "2026-09-16T18:00",
     });
-    expect(html).toContain('class="needle"');
+    expect(html).toContain("remain-line");
+    expect(html).toContain(" remaining");
+    expect(html).toContain(" used");
     expect(html).toContain('fill="#e10600"');
     const needles = [...html.matchAll(/class="needle-g" transform="rotate\(([-0-9.]+) 100 100\)"/g)].map((m) =>
       Number(m[1]),
@@ -42,6 +44,9 @@ describe("analog fuel needle", () => {
     );
     expect(needles.length).toBe(7);
     expect(needles.every((d) => d === -90)).toBe(true);
+    expect(html).toContain("remain-line");
+    expect(html).toContain("— remaining");
+    expect(html).toContain("— used");
   });
 });
 

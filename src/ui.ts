@@ -317,6 +317,20 @@ export function renderEstimateInstrument(readings: Reading[], settings: AppSetti
   `;
 }
 
+function gaugeReadout(m: TankMetrics): string {
+  const hasRequests = m.requestCap != null && m.requestUsed != null;
+  const remainingLine = hasRequests
+    ? `${Math.max(0, m.requestCap! - m.requestUsed!)} of ${m.requestCap} remaining`
+    : `${fmtPct(m.remainingPct)} remaining`;
+  const usedLine = hasRequests
+    ? `${m.requestUsed} / ${m.requestCap} used`
+    : `${fmtPct(m.percentUsed)} used`;
+  return `<div class="used-readout">
+    <div class="remain-line">${remainingLine}</div>
+    <div class="used-line">${usedLine}</div>
+  </div>`;
+}
+
 export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoint[]): string {
   const meta = TANK_META[tank];
   const known = m.percentUsed != null;
@@ -329,7 +343,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
       </header>
       <div class="tank-visual">
         <div class="fuel-gauge ${known ? "" : "unknown-needle"}" style="--needle:${needle}deg">
-          <svg viewBox="0 0 200 200" role="img" aria-label="${meta.title} ${fmtPct(m.percentUsed)} used">
+          <svg viewBox="0 0 200 200" role="img" aria-label="${meta.title} ${fmtPct(m.remainingPct)} remaining, ${fmtPct(m.percentUsed)} used">
             <defs>
               <linearGradient id="bezel-${tank}" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stop-color="#6a6a6a"/>
@@ -364,11 +378,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
             </g>
           </svg>
         </div>
-        <div class="used-readout">${
-          m.requestCap != null && m.requestUsed != null
-            ? `${m.requestUsed} / ${m.requestCap} requests`
-            : `${fmtPct(m.percentUsed)} used`
-        }</div>
+        ${gaugeReadout(m)}
         ${renderSpark(points)}
       </div>
       <dl class="metrics">
@@ -379,6 +389,11 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
               ? `<em>${fmtUsd(m.remainingUsd)} left</em>`
               : `<em>remaining $ when spend/% known</em>`
         }</div>
+        <div class="metric"><span>Used</span><strong>${
+          m.requestCap != null && m.requestUsed != null
+            ? `${m.requestUsed} / ${m.requestCap}`
+            : fmtPct(m.percentUsed)
+        }</strong>${m.spendUsd != null ? `<em>${fmtUsd(m.spendUsd)} spent</em>` : `<em>how much of this tank is gone</em>`}</div>
         <div class="metric"><span>Reset / period end</span><strong>${fmtWhen(m.periodEnd)}</strong></div>
         <div class="metric"><span>Pace</span><strong>${fmtPace(m.pace)}</strong><em>1.00× = on calendar budget</em></div>
         ${rangeBlock(m)}
