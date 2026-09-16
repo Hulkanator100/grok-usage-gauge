@@ -162,7 +162,7 @@ export function renderTankCard(tank: TankId, m: TankMetrics): string {
             </defs>
             <circle class="bezel" cx="100" cy="100" r="96" fill="url(#bezel-${tank})"/>
             <circle class="face" cx="100" cy="100" r="86" fill="#050505"/>
-            <circle class="rim-glow" cx="100" cy="100" r="82" fill="none" stroke="#f5a31a" stroke-width="2.2" opacity="0.85"/>
+            <circle class="rim-glow" cx="100" cy="100" r="82" fill="none" stroke="#e8a017" stroke-width="2.2" opacity="0.9"/>
             <g class="ticks" stroke="#f4f4f4" stroke-linecap="round">${fuelTicks()}</g>
             <text class="mark-e" x="38" y="118">E</text>
             <text class="mark-f" x="162" y="118">F</text>
@@ -230,7 +230,8 @@ export function renderApp(args: {
 
   return `
     <header class="masthead">
-      <p class="eyebrow">Local · four tanks · never one bar</p>
+      <div class="horizon" aria-hidden="true"></div>
+      <p class="eyebrow">Four tanks · never one bar</p>
       <h1>Grok Usage Gauge</h1>
       <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills spend (mix cents for grok-bot-*); Bot/Cursor Models stay spend-only unless % is known; Other Models / on-demand % use plan/cap. Chrome <code>.crdownload</code> leftovers are empty — re-export. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
       <p id="origin-banner" class="origin-banner" role="note"></p>
