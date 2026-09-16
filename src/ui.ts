@@ -130,7 +130,8 @@ function warnBlock(m: TankMetrics, tank: TankId): string {
 }
 
 export function fuelNeedleDeg(percentUsed: number | undefined): number {
-  const remaining = percentUsed == null ? 50 : Math.max(0, Math.min(100, 100 - percentUsed));
+  if (percentUsed == null || Number.isNaN(percentUsed)) return -90;
+  const remaining = Math.max(0, Math.min(100, 100 - percentUsed));
   return -90 + (remaining / 100) * 180;
 }
 
