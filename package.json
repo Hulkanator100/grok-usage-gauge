@@ -5,9 +5,11 @@
   "description": "Local four-tank Grok / Cursor usage gauge. Paste spending dashboard figures; nothing is sent to a server.",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
+    "postinstall": "node scripts/prepare-ocr.mjs",
+    "prepare-ocr": "node scripts/prepare-ocr.mjs",
+    "dev": "node scripts/prepare-ocr.mjs && vite --host --port 5173 --strictPort",
+    "build": "node scripts/prepare-ocr.mjs && tsc --noEmit && vite build",
+    "preview": "vite preview --host --port 4173 --strictPort",
     "test": "vitest run"
   },
   "devDependencies": {

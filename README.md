@@ -27,19 +27,28 @@ Chrome often leaves `usage-events-*.csv.crdownload` at **0 bytes**. The gauge re
 
 Sample droppable text lives in `public/samples/`.
 
-## Run locally
+## Run locally (this is what Edge needs)
 
-```bash
+The Cloud Agent / Cursor Simple Browser is **not** Microsoft Edge on your PC. `http://localhost:5173` in Edge talks to **your** machine. If Vite is only running in a cloud VM, Edge shows a blank/broken tab. Cursor Ports forwarding is also not the week-long test — it dies when the agent sleeps, and localStorage is a different origin than a later local run.
+
+On **your Windows PC**, in PowerShell or Terminal:
+
+```powershell
+git clone -b cursor/grok-usage-gauge-d2dc https://github.com/Hulkanator100/grok-usage-gauge.git
+cd grok-usage-gauge
 npm install
 npm run dev
 ```
 
-Open the printed localhost URL (Vite default is `http://localhost:5173`).
+Then in **Edge** open **http://127.0.0.1:5173** (use that, not `localhost`, if the tab does not load). Leave that terminal open. Same URL every day = one week of history in Edge’s `localStorage` key `grok-usage-gauge.v1`.
 
 ```bash
 npm test
 npm run build
+npm run preview
 ```
+
+`preview` is http://127.0.0.1:4173 after a production build. OCR assets are copied next to the page (`public/tesseract`) so Edge Tracking Prevention does not have to allow jsDelivr.
 
 ## How to record a reading
 

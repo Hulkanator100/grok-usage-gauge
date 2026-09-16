@@ -63,10 +63,32 @@ async function thumbnail(file: File): Promise<string | undefined> {
   }
 }
 
+function sameOriginOcrOptions() {
+  const base = new URL("tesseract/", window.location.href).href;
+  return {
+    logger: () => undefined,
+    // Same-origin worker (not a blob: URL). Edge Tracking Prevention often blocks
+    // jsDelivr + blob workers; Cursor’s Simple Browser does not.
+    workerBlobURL: false as const,
+    workerPath: `${base}worker.min.js`,
+    corePath: `${base}core`,
+    langPath: `${base}lang`,
+    gzip: true,
+    errorHandler: (err: unknown) => console.warn("ocr", err),
+  };
+}
+
 export async function ocrImage(file: File): Promise<string> {
   const Tesseract = await import("tesseract.js");
-  const result = await Tesseract.recognize(file, "eng", { logger: () => undefined });
-  return result.data.text ?? "";
+  const local = sameOriginOcrOptions();
+  try {
+    const result = await Tesseract.recognize(file, "eng", local);
+    return result.data.text ?? "";
+  } catch (first) {
+    const result = await Tesseract.recognize(file, "eng", { logger: () => undefined });
+    if (!result.data.text) throw first;
+    return result.data.text;
+  }
 }
 
 export async function ingestFile(file: File, capturedAt: string): Promise<IngestResult> {

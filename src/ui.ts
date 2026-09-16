@@ -175,6 +175,7 @@ export function renderApp(args: {
       <p class="eyebrow">Local · four tanks · never one bar</p>
       <h1>Grok Usage Gauge</h1>
       <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills spend (mix cents for grok-bot-*); Bot/Cursor Models stay spend-only unless % is known; Other Models / on-demand % use plan/cap. Chrome <code>.crdownload</code> leftovers are empty — re-export. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
+      <p id="origin-banner" class="origin-banner" role="note"></p>
       ${
         args.lastImport
           ? `<div class="ingest-banner" role="status">
@@ -204,7 +205,7 @@ export function renderApp(args: {
         <div id="drop-zone" class="drop-zone">
           <strong>Drop screenshots or usage files</strong>
           <p>png / jpg / webp, copied <code>/usage</code> text, Settings → Usage, Spending, or a finished usage-events <code>.csv</code>. Empty Chrome <code>.crdownload</code> files are rejected. Paste an image with Ctrl+V.</p>
-          <input id="file-input" type="file" accept=".csv,.crdownload,text/csv,image/*,.txt,.md,.json,.log,text/plain" multiple />
+          <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.csv,text/csv,.txt,.md,.json,.log" multiple />
           <button type="button" id="choose-files">Read chosen files</button>
           <p class="chosen">${args.lastImport ? escapeHtml(args.lastImport.names) : "No file chosen yet"}</p>
         </div>

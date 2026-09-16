@@ -17,6 +17,13 @@ function persist() {
   saveState(state);
 }
 
+function fillOriginBanner() {
+  const el = document.getElementById("origin-banner");
+  if (!el) return;
+  const here = window.location.origin;
+  el.innerHTML = `This copy is <strong>${here}</strong>. Cursor’s preview is a different browser than Edge. Week-long history lives in <em>this</em> origin’s localStorage. On your PC run <code>npm run dev</code> and open <code>http://127.0.0.1:5173</code> (not a cloud-agent URL). Prefer 127.0.0.1 if <code>localhost</code> fails on Windows.`;
+}
+
 function setLastImport(next: LastImport | undefined) {
   state.lastImport = next;
   persist();
@@ -171,6 +178,7 @@ function bind() {
     render();
   });
 
+  fillOriginBanner();
   fileInput?.addEventListener("change", () => onFilePicked(fileInput));
   fileInput?.addEventListener("input", () => onFilePicked(fileInput));
   document.getElementById("choose-files")?.addEventListener("click", () => fileInput?.click());
