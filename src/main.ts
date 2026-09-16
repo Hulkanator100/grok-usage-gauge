@@ -20,8 +20,8 @@ function persist() {
 function fillOriginBanner() {
   const el = document.getElementById("origin-banner");
   if (!el) return;
-  const here = window.location.origin;
-  el.innerHTML = `This copy is <strong>${here}</strong>. Cursor’s preview is a different browser than Edge. Week-long history lives in <em>this</em> origin’s localStorage. On your PC run <code>npm run dev</code> and open <code>http://127.0.0.1:5173</code> (not a cloud-agent URL). Prefer 127.0.0.1 if <code>localhost</code> fails on Windows.`;
+  const here = `${window.location.origin}${window.location.pathname}`;
+  el.innerHTML = `This copy is <strong>${here}</strong>. Readings are in <em>this browser on this PC</em> (localStorage). Shutting the computer off does not erase them. A terminal is only needed while you have the page open if you serve it with npm. GitHub can host the page; it cannot be a live usage database. Download history JSON for a file backup you can keep in a <em>private</em> gist or repo.`;
 }
 
 function setLastImport(next: LastImport | undefined) {
@@ -109,12 +109,17 @@ async function handleFiles(list: FileList | File[]) {
     try {
       const result = await ingestFiles(files, capturedIso());
       paste = result.extracted || paste;
-      if (result.planHint && result.planHint !== state.settings.plan) {
-        state.settings.plan = result.planHint;
-      }
-      if (result.readings.length) {
-        state.readings = [...state.readings, ...result.readings];
+      if (result.restored) {
+        state = result.restored;
         persist();
+      } else {
+        if (result.planHint && result.planHint !== state.settings.plan) {
+          state.settings.plan = result.planHint;
+        }
+        if (result.readings.length) {
+          state.readings = [...state.readings, ...result.readings];
+          persist();
+        }
       }
       setLastImport(summarizeImport(files, result));
       notice = state.lastImport?.summary;
@@ -236,6 +241,10 @@ function bind() {
     void loadBundledCsv();
   });
 
+  const restoreInput = document.getElementById("restore-json-input") as HTMLInputElement | null;
+  document.getElementById("restore-json")?.addEventListener("click", () => restoreInput?.click());
+  restoreInput?.addEventListener("change", () => onFilePicked(restoreInput));
+
   document.getElementById("export-json")?.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -244,7 +253,7 @@ function bind() {
     a.download = `grok-usage-gauge-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    notice = "Downloaded readings JSON from this browser’s localStorage (not a file on the server).";
+    notice = "Downloaded readings JSON from this browser’s localStorage (not a file on the server). Keep it in a private gist if you want a copy off this PC.";
     render();
   });
 
@@ -265,7 +274,7 @@ async function loadBundledCsv() {
   busy = "Loading bundled usage-events CSV…";
   render();
   try {
-    const res = await fetch("/usage-events-2026-09-16.csv");
+    const res = await fetch(new URL("usage-events-2026-09-16.csv", document.baseURI));
     if (!res.ok) throw new Error(`Could not fetch bundled CSV (${res.status}).`);
     const text = await res.text();
     const readings = parseUsageEventsCsv(text, {

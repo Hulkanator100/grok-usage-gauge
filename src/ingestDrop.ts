@@ -5,7 +5,8 @@ import {
   UNFINISHED_CHROME_DOWNLOAD_MESSAGE,
 } from "./parseUsageCsv";
 import { parseUsageText, readingFromParsed } from "./parseUsageText";
-import type { Reading } from "./types";
+import { parseStoredStateJson } from "./storage";
+import type { Reading, StoredState } from "./types";
 
 const IMAGE_RE = /^image\//;
 const TEXTISH = /^(text\/|application\/(json|csv|xml))/;
@@ -16,6 +17,7 @@ export interface IngestResult {
   notes: string[];
   error?: string;
   planHint?: "pro" | "proPlus" | "ultra";
+  restored?: StoredState;
 }
 
 function isCrdownload(file: File): boolean {
@@ -140,6 +142,18 @@ export async function ingestFile(file: File, capturedAt: string): Promise<Ingest
     };
   }
 
+  const restored = !isImage ? parseStoredStateJson(extracted) : undefined;
+  if (restored) {
+    return {
+      readings: restored.readings,
+      extracted,
+      notes: [
+        `Restored ${restored.readings.length} stored reading(s) from a grok-usage-gauge history JSON. This replaced the in-browser copy (it is not a GitHub database).`,
+      ],
+      restored,
+    };
+  }
+
   if (isCsvLike(file, extracted)) {
     try {
       const readings = parseUsageEventsCsv(extracted, {
@@ -205,6 +219,7 @@ export async function ingestFiles(files: File[], capturedAt: string): Promise<In
     if (one.planHint) combined.planHint = one.planHint;
     if (one.extracted) combined.extracted += (combined.extracted ? "\n\n---\n\n" : "") + one.extracted;
     combined.notes.push(...one.notes);
+    if (one.restored) combined.restored = one.restored;
   }
   return combined;
 }

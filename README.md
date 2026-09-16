@@ -28,11 +28,21 @@ Chrome often leaves `usage-events-*.csv.crdownload` at **0 bytes**. The gauge re
 
 Sample droppable text lives in `public/samples/`.
 
-## Run locally (this is what Edge needs)
+## Persistence (no terminal left open for a week)
 
-The Cloud Agent / Cursor Simple Browser is **not** Microsoft Edge on your PC. `http://localhost:5173` in Edge talks to **your** machine. If Vite is only running in a cloud VM, Edge shows a blank/broken tab. Cursor Ports forwarding is also not the week-long test — it dies when the agent sleeps, and localStorage is a different origin than a later local run.
+You do **not** need a process running for seven days. The four tanks are stored in **this browser on this PC** (`localStorage` key `grok-usage-gauge.v1`). Sleep, shutdown, and reboot keep that copy. The terminal is only a web server for the minutes you have the page open.
 
-On **your Windows PC**, in PowerShell or Terminal:
+GitHub can host the **app** (static GitHub Pages). GitHub cannot be a live database the page writes to: Pages is read-only files, there is no always-on server, and this project is not a public usage ledger.
+
+**Week test without `npm run dev`:** once Pages is enabled, open `https://hulkanator100.github.io/grok-usage-gauge/` in Edge. Same Edge profile + that URL = the same history after you turn the PC off.
+
+**Off-PC backup (optional):** **Download history JSON**, keep the file in a **private** gist or private repo (do not commit usage to a public repo). **Restore history JSON** (or drop that file) reloads it. That is a file you copy, not a GitHub database.
+
+Repo → **Settings → Pages → Build and deployment → GitHub Actions**. The workflow `.github/workflows/pages.yml` publishes `dist` from `main` and from this branch.
+
+## Run locally (optional)
+
+The Cloud Agent / Cursor Simple Browser is **not** Microsoft Edge on your PC.
 
 ```powershell
 git clone -b cursor/grok-usage-gauge-d2dc https://github.com/Hulkanator100/grok-usage-gauge.git
@@ -41,15 +51,13 @@ npm install
 npm run dev
 ```
 
-Then in **Edge** open **http://127.0.0.1:5173** (use that, not `localhost`, if the tab does not load). Leave that terminal open. Same URL every day = one week of history in Edge’s `localStorage` key `grok-usage-gauge.v1`.
+Then in **Edge** open **http://127.0.0.1:5173**. You can close that terminal when you close the tab. History stays in Edge until you **Clear local data** or wipe the site’s data.
 
 ```bash
 npm test
 npm run build
 npm run preview
 ```
-
-`preview` is http://127.0.0.1:4173 after a production build. OCR assets are copied next to the page (`public/tesseract`) so Edge Tracking Prevention does not have to allow jsDelivr.
 
 ## How to record a reading
 

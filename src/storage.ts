@@ -2,6 +2,31 @@ import { DEFAULT_SETTINGS, type Reading, type StoredState } from "./types";
 
 export const STORAGE_KEY = "grok-usage-gauge.v1";
 
+export function parseStoredStateJson(raw: string): StoredState | undefined {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return undefined;
+    const obj = parsed as Record<string, unknown>;
+    if (obj.version !== 1 || !Array.isArray(obj.readings)) return undefined;
+    const readings = obj.readings.filter((row): row is Reading => {
+      if (!row || typeof row !== "object") return false;
+      const r = row as Partial<Reading>;
+      return typeof r.capturedAt === "string" && r.tanks != null && typeof r.tanks === "object";
+    });
+    const settingsRaw = obj.settings && typeof obj.settings === "object" ? (obj.settings as StoredState["settings"]) : undefined;
+    const lastImport =
+      obj.lastImport && typeof obj.lastImport === "object" ? (obj.lastImport as StoredState["lastImport"]) : undefined;
+    return {
+      version: 1,
+      readings,
+      settings: { ...DEFAULT_SETTINGS, ...settingsRaw },
+      lastImport,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export function loadState(): StoredState {
   if (typeof localStorage === "undefined") {
     return { version: 1, readings: [], settings: { ...DEFAULT_SETTINGS } };
@@ -9,16 +34,7 @@ export function loadState(): StoredState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { version: 1, readings: [], settings: { ...DEFAULT_SETTINGS } };
-    const parsed = JSON.parse(raw) as StoredState;
-    if (parsed?.version !== 1 || !Array.isArray(parsed.readings)) {
-      return { version: 1, readings: [], settings: { ...DEFAULT_SETTINGS } };
-    }
-    return {
-      version: 1,
-      readings: parsed.readings,
-      settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
-      lastImport: parsed.lastImport,
-    };
+    return parseStoredStateJson(raw) ?? { version: 1, readings: [], settings: { ...DEFAULT_SETTINGS } };
   } catch {
     return { version: 1, readings: [], settings: { ...DEFAULT_SETTINGS } };
   }

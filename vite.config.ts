@@ -1,8 +1,8 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  // Relative base so `vite preview` / a local static host work from any folder.
-  base: "./",
+  // Relative locally; GitHub Pages sets BASE_PATH=/grok-usage-gauge/
+  base: process.env.BASE_PATH || "./",
   server: {
     host: true,
     port: 5173,
