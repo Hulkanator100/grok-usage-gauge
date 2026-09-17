@@ -3,8 +3,8 @@ import { ingestFiles } from "./ingestDrop";
 import { parsePaste, sampleDashboardPaste } from "./parsePaste";
 import { parseUsageEventsCsv } from "./parseUsageCsv";
 import { clearState, loadState, saveState } from "./storage";
-import type { LastImport, StoredState } from "./types";
-import { X_GROK_CAPS, type XGrokPlan } from "./types";
+import { buildIngestReview, type IngestReview } from "./ingestReview";
+import { X_GROK_CAPS, type LastImport, type StoredState, type XGrokPlan } from "./types";
 import { formatRequestCap, formatUsdCap, fromDatetimeLocalValue, isAppTab, renderApp, toDatetimeLocalValue, type AppTab } from "./ui";
 
 let state: StoredState = loadState();
@@ -13,6 +13,7 @@ let capturedAtLocal = toDatetimeLocalValue();
 let notice: string | undefined;
 let error: string | undefined;
 let busy: string | undefined;
+let ingestReview: IngestReview | undefined;
 const TAB_KEY = "grok-usage-gauge.tab";
 let activeTab: AppTab = (() => {
   try {
@@ -31,6 +32,15 @@ function setTab(id: AppTab) {
   } catch {
     /* ignore */
   }
+}
+
+function confirmImport(args: Parameters<typeof buildIngestReview>[0]) {
+  ingestReview = buildIngestReview(args);
+  notice =
+    ingestReview.changedCount === 0
+      ? "Import stored. No tank metric moved. Dates are on the Review tab — meters did not open automatically."
+      : `${ingestReview.changedCount} tank metric${ingestReview.changedCount === 1 ? "" : "s"} changed. Review dates first; meters did not open automatically.`;
+  setTab("review");
 }
 
 function persist() {
@@ -82,6 +92,7 @@ function render() {
     busy,
     lastImport: state.lastImport,
     activeTab,
+    review: ingestReview,
   });
   bind();
 }
@@ -142,6 +153,7 @@ async function handleFiles(list: FileList | File[]) {
     });
     busy = `Reading ${files.map((f) => f.name).join(", ")}…`;
     render();
+    const before = state.readings;
     try {
       const result = await ingestFiles(files, capturedIso(), state.settings);
       paste = result.extracted || paste;
@@ -160,7 +172,16 @@ async function handleFiles(list: FileList | File[]) {
       setLastImport(summarizeImport(files, result));
       notice = state.lastImport?.summary;
       error = result.error;
-      if (!result.error && (result.readings.length || result.restored)) setTab("cursor");
+      confirmImport({
+        before,
+        after: state.readings,
+        added: result.restored ? state.readings : result.readings,
+        sourceLabel: result.restored ? "Restored history JSON" : "Dropped / chosen files",
+        names: files.map((f) => f.name).join(", "),
+        bytes: files.reduce((n, f) => n + f.size, 0),
+        summary: state.lastImport?.summary ?? "",
+        error: result.error,
+      });
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
       setLastImport({
@@ -264,6 +285,16 @@ function bind() {
       render();
     });
   });
+  const jump = (id: AppTab) => {
+    document.getElementById(`review-to-${id}`)?.addEventListener("click", () => {
+      setTab(id);
+      render();
+    });
+  };
+  jump("cursor");
+  jump("xgrok");
+  jump("history");
+  jump("add");
   fileInput?.addEventListener("change", () => onFilePicked(fileInput));
   fileInput?.addEventListener("input", () => onFilePicked(fileInput));
   document.getElementById("choose-files")?.addEventListener("click", (e) => {
@@ -296,11 +327,18 @@ function bind() {
     error = undefined;
     notice = undefined;
     try {
+      const before = state.readings;
       const readings = parsePaste(pasteEl?.value ?? paste, capturedIso(), state.settings);
       state.readings = [...state.readings, ...readings];
       persist();
-      notice = `Saved ${readings.length} reading${readings.length === 1 ? "" : "s"} locally.`;
-      setTab("cursor");
+      confirmImport({
+        before,
+        after: state.readings,
+        added: readings,
+        sourceLabel: "Pasted text",
+        names: "paste box",
+        summary: `Saved ${readings.length} reading${readings.length === 1 ? "" : "s"} locally.`,
+      });
       render();
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
@@ -316,20 +354,34 @@ function bind() {
   });
 
   document.getElementById("load-example")?.addEventListener("click", () => {
+    const before = state.readings;
     state.readings = buildExampleWeek();
     persist();
-    notice = "Loaded a two-reading example week (all four tanks, on-pace Bot week).";
     error = undefined;
-    setTab("cursor");
+    confirmImport({
+      before,
+      after: state.readings,
+      added: state.readings,
+      sourceLabel: "Example week",
+      names: "bundled 2-reading demo",
+      summary: "Loaded a two-reading example week (all four tanks, on-pace Bot week).",
+    });
     render();
   });
 
   document.getElementById("load-accel")?.addEventListener("click", () => {
+    const before = state.readings;
     state.readings = buildAcceleratingWeek();
     persist();
-    notice = "Loaded an accelerating Bot week. The Grok Bot tank should warn it will empty before weekly reset.";
     error = undefined;
-    setTab("cursor");
+    confirmImport({
+      before,
+      after: state.readings,
+      added: state.readings,
+      sourceLabel: "Accelerating week",
+      names: "bundled 3-reading demo",
+      summary: "Loaded an accelerating Bot week. The Grok Bot tank should warn it will empty before weekly reset.",
+    });
     render();
   });
 
@@ -360,6 +412,7 @@ function bind() {
     capturedAtLocal = toDatetimeLocalValue();
     notice = "Local data cleared.";
     error = undefined;
+    ingestReview = undefined;
     render();
   });
 }
@@ -373,6 +426,7 @@ async function loadBundledCsv() {
     const res = await fetch(new URL("usage-events-2026-09-16.csv", document.baseURI));
     if (!res.ok) throw new Error(`Could not fetch bundled CSV (${res.status}).`);
     const text = await res.text();
+    const before = state.readings;
     const readings = parseUsageEventsCsv(text, {
       fileName: "usage-events-2026-09-16.csv",
       byteLength: new TextEncoder().encode(text).length,
@@ -387,8 +441,15 @@ async function loadBundledCsv() {
       extracted: text.slice(0, 4000),
       summary: `Loaded ${readings.length} daily cumulative readings from the bundled Sep 2026 usage-events CSV.`,
     });
-    notice = state.lastImport?.summary;
-    setTab("cursor");
+    confirmImport({
+      before,
+      after: state.readings,
+      added: readings,
+      sourceLabel: "Bundled usage-events CSV",
+      names: "usage-events-2026-09-16.csv",
+      bytes: new TextEncoder().encode(text).length,
+      summary: state.lastImport?.summary ?? "",
+    });
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
   } finally {

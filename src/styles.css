@@ -142,6 +142,34 @@ body {
 }
 .about-foot .lede { margin-top: 0.75rem; }
 
+.review-panel {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  padding: 1rem 1.1rem 1.2rem;
+}
+.review-stamps { color: var(--ink); }
+.review-stamps li { margin: 0.4rem 0; }
+.review-table-wrap { overflow-x: auto; margin: 0.5rem 0 1rem; }
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.review-table th,
+.review-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid var(--hair);
+  color: var(--dim);
+}
+.review-table tbody th { color: var(--ink); font-weight: 600; }
+.review-table .when { margin-top: 0.2rem; font-size: 0.75rem; color: var(--dim); }
+.review-table tr.changed td:last-child,
+.review-table tr.changed tbody th { color: var(--amber); }
+.review-table tr.changed { background: rgba(232, 160, 23, 0.08); }
+
 .lede, .bay-note, .surfaces, .out-of-v1, .token-note {
   color: var(--dim);
   line-height: 1.5;

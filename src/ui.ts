@@ -5,6 +5,7 @@ import { CURSOR_TANK_IDS, isXGrokTank, OTHER_MODELS_INCLUDED_USD, TANK_IDS, TANK
 import { sortedReadings } from "./storage";
 import { historyPoints, polylineRemaining, timeWindow, type HistoryPoint } from "./chart";
 import { estimateAllTanks, polylineValues, type TankEstimate } from "./estimate";
+import { formatWhen, type IngestReview } from "./ingestReview";
 
 function fmtPct(n: number | undefined): string {
   if (n == null || Number.isNaN(n)) return "—";
@@ -455,6 +456,7 @@ export const APP_TABS = [
   { id: "history", label: "History" },
   { id: "estimate", label: "Estimate" },
   { id: "add", label: "Add reading" },
+  { id: "review", label: "Review" },
   { id: "log", label: "Readings" },
 ] as const;
 
@@ -474,6 +476,59 @@ function tabPanel(id: AppTab, active: AppTab, inner: string): string {
   return `<section class="tab-panel" role="tabpanel" id="panel-${id}" data-panel="${id}" aria-labelledby="tab-${id}" ${on ? "" : "hidden"}>${inner}</section>`;
 }
 
+function renderReviewPanel(review: IngestReview | undefined): string {
+  if (!review) {
+    return `<section class="review-panel">
+      <h2>Confirm this import</h2>
+      <p class="bay-note">After you drop, choose, or save a paste, this tab lists the dates that were used and whether any tank metric moved. You stay here until you open Cursor tanks or History.</p>
+    </section>`;
+  }
+  const changeRows = review.changes
+    .map((c) => {
+      const klass = c.changed ? "changed" : "same";
+      const flag = c.changed ? "Changed" : "No change";
+      return `<tr class="${klass}">
+        <th>${c.title}</th>
+        <td>${escapeHtml(c.beforeLabel)}${c.beforeAt ? `<div class="when">${formatWhen(c.beforeAt)}</div>` : ""}</td>
+        <td>${escapeHtml(c.afterLabel)}${c.afterAt ? `<div class="when">${formatWhen(c.afterAt)}</div>` : ""}</td>
+        <td>${flag}</td>
+      </tr>`;
+    })
+    .join("");
+  const stamps = review.stamps
+    .map(
+      (s) =>
+        `<li><strong>${escapeHtml(s.label)}</strong> · ${formatWhen(s.capturedAt)}${s.note ? `<div class="notes">${escapeHtml(s.note)}</div>` : ""}</li>`,
+    )
+    .join("");
+  const headline =
+    review.changedCount === 0
+      ? "Imported, but no tank metric moved versus what you already had."
+      : `${review.changedCount} tank${review.changedCount === 1 ? "" : "s"} changed.`;
+  return `<section class="review-panel">
+    <h2>Confirm this import</h2>
+    <p class="notice">${escapeHtml(headline)}</p>
+    <p class="control-status">Submitted ${formatWhen(review.submittedAt)} · ${escapeHtml(review.sourceLabel)} · ${escapeHtml(review.names)}${review.bytes != null ? ` · ${review.bytes.toLocaleString()} bytes` : ""}</p>
+    <p class="slide-hint">${escapeHtml(review.summary)}</p>
+    ${review.error ? `<p class="error" role="alert">${escapeHtml(review.error)}</p>` : ""}
+    <h3 class="instrument-sub">Dates used (not necessarily today)</h3>
+    ${stamps ? `<ol class="review-stamps">${stamps}</ol>` : `<p>No timestamped readings in this batch.</p>`}
+    <h3 class="instrument-sub">Metrics before → after</h3>
+    <div class="review-table-wrap">
+      <table class="review-table">
+        <thead><tr><th>Tank</th><th>Before</th><th>After</th><th></th></tr></thead>
+        <tbody>${changeRows}</tbody>
+      </table>
+    </div>
+    <div class="row paste-actions">
+      <button type="button" id="review-to-cursor">Show Cursor tanks</button>
+      <button type="button" id="review-to-xgrok" class="ghost">Show X Grok</button>
+      <button type="button" id="review-to-history" class="ghost">Show history</button>
+      <button type="button" id="review-to-add" class="ghost">Add another</button>
+    </div>
+  </section>`;
+}
+
 export function renderApp(args: {
   readings: Reading[];
   settings: AppSettings;
@@ -484,6 +539,7 @@ export function renderApp(args: {
   busy?: string;
   lastImport?: LastImport;
   activeTab?: AppTab;
+  review?: IngestReview;
 }): string {
   const now = new Date();
   const cursorCards = CURSOR_TANK_IDS.map((id) =>
@@ -535,6 +591,7 @@ export function renderApp(args: {
       ${tabButton("history", "History", tab)}
       ${tabButton("estimate", "Estimate", tab)}
       ${tabButton("add", "Add reading", tab)}
+      ${tabButton("review", "Review", tab, args.review ? `<span class="tab-count">${args.review.changedCount}</span>` : "")}
       ${tabButton("log", "Readings", tab, n ? `<span class="tab-count">${n}</span>` : "")}
     </nav>
 
@@ -748,6 +805,8 @@ export function renderApp(args: {
       </div>
     </section>`,
     )}
+
+    ${tabPanel("review", tab, renderReviewPanel(args.review))}
 
     ${tabPanel(
       "log",

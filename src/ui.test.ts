@@ -72,6 +72,8 @@ describe("local controls sliders", () => {
       capturedAtLocal: "2026-09-16T18:00",
     });
     expect(html).toContain("app-tabs");
+    expect(html).toContain("data-tab=\"review\"");
+    expect(html).toContain("Confirm this import");
     expect(html).toContain("about-foot");
     expect(html).toContain("How this gauge works");
     expect(html).toContain("lede-short");
