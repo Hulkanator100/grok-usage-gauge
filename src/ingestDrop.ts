@@ -1,3 +1,4 @@
+import { resolveFileCapturedAt } from "./captureTime";
 import { parsePaste } from "./parsePaste";
 import {
   looksLikeUsageEventsCsv,
@@ -181,7 +182,10 @@ export async function ingestFile(
       return {
         readings,
         extracted,
-        notes: readings[0]?.notes ?? [],
+        notes: [
+          "CSV row dates are the capture times (not the Timestamp field), so a multi-day export dropped today still plots across those days.",
+          ...(readings[0]?.notes ?? []),
+        ],
         error: undefined,
       };
     } catch (err) {
@@ -194,8 +198,11 @@ export async function ingestFile(
     }
   }
 
-  const parsed = parseUsageText(extracted, capturedAt, file.name, settings);
-  const notes = [...parsed.notes];
+  const stamp = await resolveFileCapturedAt(file, extracted, capturedAt);
+  const when = stamp.iso;
+
+  const parsed = parseUsageText(extracted, when, file.name, settings);
+  const notes = [stamp.note, ...parsed.notes];
   let readings: Reading[] = [];
 
   if (!parsed.fillsTank && (parsed.surface === "grok-com" || parsed.surface === "grok-bot-routines" || parsed.surface === "cursor-bugbot")) {
@@ -205,17 +212,18 @@ export async function ingestFile(
   if (parsed.fillsTank) {
     readings = [
       {
-        ...readingFromParsed(parsed, capturedAt, extracted, isImage ? "screenshot" : "drop"),
+        ...readingFromParsed(parsed, when, extracted, isImage ? "screenshot" : "drop"),
+        notes: [stamp.note, ...parsed.notes],
         drop: { fileName: file.name, mime: file.type || "application/octet-stream", previewDataUrl: preview },
       },
     ];
   } else {
     try {
-      readings = parsePaste(extracted, capturedAt, settings).map((r) => ({
+      readings = parsePaste(extracted, when, settings).map((r) => ({
         ...r,
         source: isImage ? ("screenshot" as const) : ("drop" as const),
         surface: parsed.surface,
-        notes: parsed.notes,
+        notes: [stamp.note, ...parsed.notes],
         drop: { fileName: file.name, mime: file.type || "application/octet-stream", previewDataUrl: preview },
       }));
     } catch {

@@ -531,7 +531,7 @@ export function renderApp(args: {
             <label class="select-field">When this screenshot or paste was taken
               <input id="captured-at" type="datetime-local" value="${args.capturedAtLocal}" />
             </label>
-            <p class="slide-hint">CSV rows keep the dates inside the file. Screenshots and paste use this clock.</p>
+            <p class="slide-hint">Fallback only. Dropped photos, OCR text, filenames, file dates, and CSV rows keep their own times so a same-day dump of older shots still plots across those days.</p>
           </li>
           <li class="save-step">
             <h3>2 · Drop or choose a file</h3>

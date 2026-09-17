@@ -77,6 +77,7 @@ describe("local controls sliders", () => {
     expect(html).toContain("1 · Timestamp");
     expect(html).toContain("2 · Drop or choose a file");
     expect(html).toContain("3 · Or paste text");
+    expect(html).toContain("same-day dump of older shots");
     expect(html).toContain("file-input-hidden");
     expect(html).toContain("Inputs · write the tanks");
     expect(html).toContain("Outputs · copy or wipe this browser");
