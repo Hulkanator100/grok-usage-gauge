@@ -25,7 +25,7 @@ describe("analog fuel needle", () => {
     expect(html).toContain('fill="url(#face-body-grokBotWeekly)"');
     expect(html).toContain("face-amber-");
     expect(html).toContain("spark-wash");
-    const needles = [...html.matchAll(/class="needle-g" transform="rotate\(([-0-9.]+) 100 100\)"/g)].map((m) =>
+    const needles = [...html.matchAll(/fuel-gauge[^>]*style="--needle:([-0-9.]+)deg"/g)].map((m) =>
       Number(m[1]),
     );
     expect(needles).toHaveLength(7);
@@ -61,6 +61,25 @@ describe("analog fuel needle", () => {
     expect(html).toContain("face-star-grokBotWeekly");
     expect(html).toContain("spark-wash");
     expect(html).toContain("id=\"spark-grokBotWeekly-amber\"");
+  });
+
+  it("parks spend-only tanks at ½ instead of empty-or-full", () => {
+    const html = renderApp({
+      readings: [
+        {
+          id: "spend-only",
+          capturedAt: "2026-09-16T18:00:00.000Z",
+          source: "csv",
+          tanks: { grokBotWeekly: { spendUsd: 3.65 } },
+        },
+      ],
+      settings: DEFAULT_SETTINGS,
+      paste: "",
+      capturedAtLocal: "2026-09-16T18:00",
+    });
+    expect(html).toContain("spend-only-needle");
+    expect(html).toContain("Dollars are saved");
+    expect(html).toMatch(/data-tank="grokBotWeekly"[\s\S]*?style="--needle:0\.0deg"/);
   });
 });
 

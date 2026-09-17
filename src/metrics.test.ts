@@ -65,6 +65,39 @@ describe("acceleration + empty before reset", () => {
   });
 });
 
+describe("fill from mixed snapshots", () => {
+  it("keeps the needle on fuel after a later spend-only snapshot", () => {
+    const now = new Date("2026-09-16T18:00:00Z");
+    const metrics = computeTankMetrics({
+      kind: "week",
+      now,
+      snapshots: [
+        {
+          capturedAt: "2026-09-13T00:00:00.000Z",
+          snap: { percentUsed: 40, spendUsd: 2.8 },
+        },
+        {
+          capturedAt: "2026-09-16T00:00:00.000Z",
+          snap: { spendUsd: 4.2 },
+        },
+      ],
+    });
+    expect(metrics.percentUsed).toBeCloseTo(60, 5);
+    expect(metrics.remainingPct).toBeCloseTo(40, 5);
+    expect(metrics.spendUsd).toBeCloseTo(4.2, 5);
+  });
+
+  it("does not treat a spend-only Bot week as an empty tank", () => {
+    const metrics = computeTankMetrics({
+      kind: "week",
+      now: new Date("2026-09-16T18:00:00Z"),
+      snapshots: [{ capturedAt: "2026-09-16T00:00:00.000Z", snap: { spendUsd: 3.65 } }],
+    });
+    expect(metrics.percentUsed).toBeUndefined();
+    expect(metrics.spendUsd).toBeCloseTo(3.65, 5);
+  });
+});
+
 describe("tanks stay separate", () => {
   it("does not sum four tanks into one percent", () => {
     const now = new Date("2026-09-16T19:26:00Z");
