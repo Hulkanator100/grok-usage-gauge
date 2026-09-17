@@ -31,7 +31,7 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
     title: "Grok Bot — Settings → Usage & Billing",
     history:
       "The only official Bot usage meter. Account menu can also show Weekly usage. Shows included weekly % + reset, and on-demand (Billed through Cursor) vs the monthly cap. SuperGrok / X Premium+ titles on that meter are the linked grant, not a second grok.com clock.",
-    drop: "Screenshot of Settings → Usage (or the sidebar Weekly usage + on-demand rows). Best source for tank 1 and tank 4.",
+    drop: "Screenshot of Settings → Usage (or the sidebar Weekly usage + extra-pay rows). Best source for Grok Bot week and Cursor extra-pay dollars.",
     tank: "Grok Bot weekly + Cursor on-demand $",
     fillsTank: true,
   },
@@ -39,34 +39,34 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
     id: "grok-bot-chat-banner",
     title: "Grok Bot — chat / Command Agent / specialist bots",
     history:
-      "Every Bot on the Cursor account shares ONE weekly grant (plans do not stack). Chat transcripts are not a usage export. When the pool is empty you get “You’ve reached your Grok Bot usage limit. It resets in N days.” Windows desktop may stay silent instead of showing the banner. Bot-to-bot turns still burn the week. No per-Bot usage CSV.",
+      "Every Bot on the Cursor account shares ONE weekly grant (plans do not stack). Chat transcripts are not a usage export. When the pool is empty you get “You’ve reached your Grok Bot usage limit. It resets in N days.” Windows desktop may stay silent instead of showing the banner. Bot-to-bot turns still burn the week. There is no per-Bot usage spreadsheet.",
     drop: "Screenshot of the limit banner or sidebar Weekly usage. Do not drop chat logs expecting cost — they are not cents.",
     tank: "Grok Bot weekly (100% + reset-in-N-days)",
     fillsTank: true,
   },
   {
     id: "grok-bot-routines",
-    title: "Grok Bot — Routines (grok-bot-automation)",
+    title: "Grok Bot — Routines",
     history:
-      "View conversation details → Routines. Run history keeps the 20 most recent runs. Right-click → Copy request ID (support, not billing). Test run spends usage. A saved inactive routine spends nothing. No dollar totals in this panel. Mix cents live on Cursor Spending under grok-bot-automation (cost, not tokens; cache reads inflate tokens).",
+      "View conversation details → Routines. Run history keeps the 20 most recent runs. Copy request ID is for support, not billing. A test run spends usage. A saved inactive routine spends nothing. No dollar totals here. Mix cents live on Cursor Spending under scheduled routines (cost, not tokens; cache reads puff token counts).",
     drop: "Routine history screenshots are activity, not a tank fill. Pair with Settings Usage or Spending mix cents.",
     tank: "Does not fill a tank by itself",
     fillsTank: false,
   },
   {
     id: "grok-bot-cua",
-    title: "Grok Bot — computer / browser (grok-bot-cua)",
+    title: "Grok Bot — computer / browser",
     history:
-      "CUA sessions on the Bot PC share the same weekly included pool. There is no public Tesla/CUA usage API and no per-session cost export. Mix line grok-bot-cua is cents on the Cursor account.",
-    drop: "No CUA history file to import. Screenshot Settings Usage, or Spending mix cents for grok-bot-cua.",
+      "Computer-use sessions on the Bot share the same weekly included pool. There is no public per-session cost export. Cents show up on Cursor Spending as computer / browser mix.",
+    drop: "There is no computer-use history file to import. Screenshot Settings Usage, or Spending mix cents for computer / browser.",
     tank: "Grok Bot weekly (via Settings / mix cents)",
     fillsTank: false,
   },
   {
     id: "grok-bot-mcp",
-    title: "Grok Bot — MCP / plugins on the Bot PC",
+    title: "Grok Bot — plugins",
     history:
-      "Plugin/MCP tool calls are the same Cursor-account weekly grant. Marketplace / Yours lists plugins; that is not a usage ledger.",
+      "Plugin tool calls are the same Cursor-account weekly grant. Marketplace / Yours lists plugins; that is not a usage ledger.",
     drop: "Plugin lists are not usage. Use Settings Usage.",
     tank: "Grok Bot weekly",
     fillsTank: false,
@@ -75,7 +75,7 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
     id: "cursor-spending",
     title: "Cursor — dashboard Spending",
     history:
-      "cursor.com/dashboard/spending: separate Cursor Models % and Other Models % (never one combined bar), on-demand spend vs Monthly Limit, billing-cycle reset. This is the v1 source of truth for tanks 2–4. grok-bot-* rows under Cursor Models are a display bug — header % is Cursor-app usage.",
+      "cursor.com/dashboard/spending: separate Cursor Models % and Other Models % (never one combined bar), extra-pay spend vs Monthly Limit, billing-cycle reset. This is the source of truth for Cursor Models, Other Models, and extra pay. grok-bot rows under Cursor Models are a display bug — the header % is Cursor-app usage.",
     drop: "Screenshot or copy of the Spending page. Highest-value drop after Grok Bot Settings.",
     tank: "Cursor Models, Other Models, on-demand $",
     fillsTank: true,
@@ -84,18 +84,18 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
     id: "cursor-usage-dashboard",
     title: "Cursor — dashboard Usage (token chart)",
     history:
-      "cursor.com/dashboard/usage shows Total tokens / Included / On-demand for the selected 1d · 7d · 30d · MTD range, plus a cumulative chart grouped by model. Those cards are token counts, not tank %. Cost in the table is often the word Included or Free. Export CSV for dollars. Spending is the % meters for Cursor Models / Other Models.",
-    drop: "Screenshot is recognized (tokens + on-demand 0 in that window). Prefer Export CSV or a Spending screenshot for tank %. Do not treat 108M tokens as 108% used.",
-    tank: "On-demand $0 if the On-demand token card is 0; Cursor/Other get token context only. Chart range is not Bot weekly reset.",
+      "cursor.com/dashboard/usage shows Total tokens / Included / On-demand for the selected 1d · 7d · 30d · MTD range, plus a cumulative chart grouped by model. Those cards are token counts, not tank %. Cost in the table is often the word Included or Free. Export a spreadsheet for dollars. Spending is the % meters for Cursor Models / Other Models.",
+    drop: "A screenshot is recognized (tokens + extra-pay 0 in that window). Prefer the Usage export or a Spending screenshot for tank %. Do not treat 108M tokens as 108% used.",
+    tank: "Extra-pay $0 if the On-demand token card is 0; Cursor/Other get token context only. Chart range is not Bot weekly reset.",
     fillsTank: true,
   },
   {
     id: "cursor-usage-events",
-    title: "Cursor — dashboard Usage event list / CSV",
+    title: "Cursor — dashboard Usage event list / spreadsheet",
     history:
-      "cursor.com/dashboard/usage lists per-request model, Kind (Included vs usage-based / On-Demand), tokens, Cost. Export CSV columns matched by name: Date, Kind, Model, Max Mode, Input (w/ Cache Write), Input (w/o Cache Write), Cache Read, Output Tokens, Total Tokens, Cost. Newer exports may add Cloud Agent ID, Automation ID, User. grok-bot-* Included rows fill Bot mix cents — not Cursor Models (that header grouping is a display bug). Composer / grok-4.6 / grok-4.5 → Cursor Models spend. Claude/GPT/etc → Other Models. Usage-based/On-Demand Kind → on-demand $. Cost Included/Free/- = $0 charged. CSV has spend, not unpublished %. Other Models / on-demand % come from plan/cap. Incomplete Chrome .crdownload files are empty and unusable.",
-    drop: "Finished .csv from Usage (never a 0-byte .crdownload). Import or paste locally. Daily cumulative readings unlock 2+ burn on tanks with a known cap.",
-    tank: "All four tanks as spend (Bot/Cursor Models stay spend-only unless % is known; Other Models/on-demand % from plan/cap)",
+      "cursor.com/dashboard/usage lists each request’s model, Kind (Included vs extra pay), tokens, and Cost. Export columns we match by name: Date, Kind, Model, Max Mode, Input (w/ Cache Write), Input (w/o Cache Write), Cache Read, Output Tokens, Total Tokens, Cost. grok-bot Included rows fill Bot mix cents — not Cursor Models (that header grouping is a display bug). Composer / grok-4.6 / grok-4.5 → Cursor Models spend. Claude/GPT/etc → Other Models. Extra-pay Kind → extra-pay dollars. Cost Included/Free/- = $0 charged. The spreadsheet has spend, not hidden %. Other Models / extra-pay % come from your plan and cap. Incomplete Chrome downloads are empty and unusable.",
+    drop: "A finished spreadsheet from Usage (never a still-downloading Chrome file). Add or paste it here. Daily totals unlock empty-by dates on tanks with a known cap.",
+    tank: "All four Cursor tanks as spend (Bot/Cursor Models stay spend-only unless % is known; Other Models/extra-pay % from plan/cap)",
     fillsTank: true,
   },
   {
@@ -111,7 +111,7 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
     id: "cursor-cli",
     title: "Cursor CLI — /usage",
     history:
-      "In the CLI, /usage shows included-usage meters (Auto / API breakdowns), on-demand spend vs limit, plan name, and billing-cycle reset. CLI work hits the Cursor month (tanks 2/3 and maybe on-demand), not only Grok Bot week.",
+      "In the CLI, /usage shows included-usage meters (Auto / API breakdowns), extra-pay spend vs limit, plan name, and billing-cycle reset. CLI work hits the Cursor month (Cursor Models, Other Models, and maybe extra pay), not only Grok Bot week.",
     drop: "Screenshot or copied /usage text.",
     tank: "Cursor Models, Other Models, on-demand $",
     fillsTank: true,
@@ -120,9 +120,9 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
     id: "cursor-cloud-agent",
     title: "Cursor Cloud Agents (and Grok Bot-launched agents)",
     history:
-      "Team analytics count agents created / PRs / lines — not dollars. Spend shows up as usage events with a Cloud Agent ID. If Grok Bot launches a cloud agent, that run bills Cursor (tanks 2/3 and maybe on-demand) as well as whatever Bot week already spent. Show both; do not merge.",
-    drop: "Spending/Usage screenshot that includes the cloud-agent request, not the analytics CSV of agent counts.",
-    tank: "Cursor Models / Other Models / on-demand (coupling)",
+      "Team analytics count agents created / PRs / lines — not dollars. Spend shows up as usage events with a Cloud Agent ID. If Grok Bot starts a cloud agent, that run bills Cursor (Cursor Models, Other Models, and maybe extra pay) as well as whatever Bot week already spent. Show both; do not add them together.",
+    drop: "Spending/Usage screenshot that includes the cloud-agent request, not the analytics export of agent counts.",
+    tank: "Cursor Models / Other Models / extra pay (plus Bot week if Grok Bot started it)",
     fillsTank: true,
   },
   {
@@ -136,18 +136,18 @@ export const SURFACE_GUIDE: SurfaceGuide[] = [
   },
   {
     id: "grok-com",
-    title: "grok.com / SuperGrok / Tesla Grok (out of v1)",
+    title: "grok.com / SuperGrok / Tesla Grok (not these tanks)",
     history:
-      "Settings → Usage has % + product split + reset + Extra Usage $. Free Chat/Voice have a second shorter clock after 100%. That is a different account meter than Cursor Grok Bot. Tesla in-car Grok follows the signed-in Grok account. No public Tesla usage API.",
+      "No public Tesla usage export. Settings → Usage has % + product split + reset + Extra Usage $. Free Chat/Voice have a second shorter clock after 100%. That is a different account meter than Cursor Grok Bot. Tesla in-car Grok follows the signed-in Grok account.",
     drop: "Recognized and rejected: Weekly SuperGrok Limit, Extra Usage Credits, Auto Top-Up, Buy Credits. Do not mix into these four tanks. Use Cursor Grok Bot Settings → Usage instead.",
-    tank: "Out of v1 — no tank",
+    tank: "Not these tanks",
     fillsTank: false,
   },
   {
     id: "x-grok-windows",
-    title: "X — Grok Light / Medium / Heavy (2-hour requests)",
+    title: "X — Grok Light / Medium / Heavy (2-hour replies)",
     history:
-      "Grok on x.com / the X app counts Light (Fast/default), Medium (Think), and Heavy as three separate request grants that refill on a rolling ~2 hour window. That is not Cursor Grok Bot week, not Cursor Models, and not grok.com SuperGrok weekly %. X developer API GET /2/usage/credits is a different prepaid-dollar meter and stays out of these tanks.",
+      "Grok on x.com / the X app counts Light (Fast/default), Medium (Think), and Heavy as three separate reply grants that refill about every two hours. That is not Cursor Grok Bot week, not Cursor Models, and not grok.com SuperGrok weekly %. X developer prepaid credits are a different meter and stay out of these tanks.",
     drop: "Screenshot or paste of the X Grok usage strip: Light 42/50, Medium 11/20, Heavy 2/10, Resets in 1 hour 18 minutes. Do not drop this onto Cursor tanks.",
     tank: "X Grok Light, Medium, Heavy — never merged with Cursor",
     fillsTank: true,

@@ -123,7 +123,7 @@ function parseCursorUsageDashboard(text: string, _capturedAt: string): ParsedUsa
   const botModels = models.filter(isGrokBotModel);
 
   notes.push(
-    "This is cursor.com/dashboard/usage (token chart), not Spending %. Tokens are not tank fill. Export CSV for $, or screenshot Spending for Cursor Models / Other Models %.",
+    "This is cursor.com/dashboard/usage (token chart), not Spending %. Tokens are not tank fill. Export a spreadsheet for dollars, or screenshot Spending for Cursor Models / Other Models %.",
   );
   if (total != null || included != null || onDemandTokens != null) {
     notes.push(
@@ -137,7 +137,7 @@ function parseCursorUsageDashboard(text: string, _capturedAt: string): ParsedUsa
     notes.push("Chart mixes Cursor Models (Grok/Composer) and Other Models (Claude/GPT/Gemini) — included tokens are not assigned as one tank %.");
   }
   if (botModels.length) {
-    notes.push("grok-bot-* rows on Usage are Bot-week mix (cost in CSV), not Cursor Models header %.");
+    notes.push("grok-bot rows on Usage are Bot-week mix (cost in the spreadsheet), not the Cursor Models header %.");
   }
 
   if (cursorModels.length) {
@@ -177,7 +177,7 @@ function parseCursorUsageDashboard(text: string, _capturedAt: string): ParsedUsa
 }
 
 export const GROK_COM_REJECT_NOTE =
-  "Classified as grok.com SuperGrok Usage (Weekly SuperGrok Limit / Extra Usage Credits). That is a different account meter than Cursor Grok Bot. Out of v1 — tanks were not changed. Drop Grok Bot Settings → Usage, cursor.com/dashboard/spending, or a usage-events CSV instead.";
+  "This looks like grok.com SuperGrok Usage (Weekly SuperGrok Limit / Extra Usage Credits). That is a different account meter than Cursor Grok Bot. Tanks were not changed. Add Grok Bot Settings → Usage, cursor.com/dashboard/spending, or a Cursor Usage spreadsheet instead.";
 
 function classifySurface(text: string, fileName = ""): SurfaceId {
   const blob = `${fileName}\n${text}`;
@@ -291,12 +291,12 @@ export function parseUsageText(
     });
     Object.assign(tanks, xTanks);
     notes.push(
-      "Classified as Grok on X (Light / Medium / Heavy request windows). These are not Cursor tanks and not grok.com SuperGrok week. Caps are requests per ~2 hours.",
+      "This is Grok on X (Light / Medium / Heavy reply windows). These are not Cursor tanks and not grok.com SuperGrok week. Limits are replies about every two hours.",
     );
     return { surface, tanks, notes, fillsTank: xGrokFilled(tanks) };
   }
   if (surface === "grok-bot-routines") {
-    notes.push("Routine run history is the last 20 runs + request IDs, not cents. It does not fill a tank.");
+    notes.push("Routine run history is the last 20 runs plus request IDs, not dollars. It does not fill a tank.");
     return { surface, tanks, notes, fillsTank: false };
   }
   if (surface === "cursor-bugbot") {
@@ -356,7 +356,7 @@ export function parseUsageText(
   if (onDemandDisabled) {
     tanks.onDemandMonthly = { spendUsd: 0, capUsd: 0, percentUsed: 0 };
     applyMonthlyReset(text, capturedAt, tanks.onDemandMonthly);
-    notes.push("On-demand is disabled ($0 cap = hard stop).");
+    notes.push("On-demand extra pay is off ($0 cap).");
   } else {
     const capUsd =
       od?.cap ??
@@ -381,13 +381,13 @@ export function parseUsageText(
   }
 
   if (surface === "cursor-cli") {
-    notes.push("CLI /usage hits the Cursor month (tanks 2/3 and maybe on-demand), not a separate CLI tank.");
+    notes.push("Cursor CLI /usage hits the Cursor month (Cursor Models, Other Models, and maybe extra pay), not a separate CLI tank.");
   }
   if (surface === "cursor-cloud-agent") {
-    notes.push("Cloud Agent spend belongs on Cursor tanks — if Grok Bot launched it, also keep the Bot week tank. Do not merge.");
+    notes.push("Cloud Agent spend belongs on Cursor tanks — if Grok Bot started it, also keep the Bot week tank. Do not add them together.");
   }
   if (surface === "cursor-usage-events") {
-    notes.push("Usage-event CSV/list is per-request cost. This gauge rolls Included spend into Bot / Cursor Models / Other Models mix-by-model, and Usage-based/On-Demand Kind into tank 4. Unpublished Bot/Cursor Models % still need Settings or Spending.");
+    notes.push("A Cursor Usage spreadsheet is per-request cost. Included spend goes to Bot / Cursor Models / Other Models by model name, and extra-pay rows go to on-demand dollars. Hidden Bot and Cursor Models % still need Settings or Spending.");
   }
 
   const xTanks = parseXGrokWindows(text, capturedAt, settings.xPlan, {
@@ -397,7 +397,7 @@ export function parseUsageText(
   });
   if (xGrokFilled(xTanks)) {
     Object.assign(tanks, xTanks);
-    notes.push("Also filled X Grok Light / Medium / Heavy request windows (separate from Cursor).");
+    notes.push("Also filled X Grok Light / Medium / Heavy reply windows (separate from Cursor).");
   }
 
   const fillsTank = TANK_IDS.some((id) => {

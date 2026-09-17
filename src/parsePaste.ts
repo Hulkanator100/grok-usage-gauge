@@ -290,7 +290,7 @@ export function parsePaste(input: string, capturedAt = new Date().toISOString(),
     const json = JSON.parse(trimmed) as unknown;
     if (Array.isArray(json)) {
       return json.map((row) => {
-        if (!row || typeof row !== "object") throw new Error("JSON array must contain reading objects.");
+        if (!row || typeof row !== "object") throw new Error("Backup list must contain reading objects.");
         return parseJsonReading(row as Record<string, unknown>, capturedAt);
       });
     }
@@ -298,7 +298,7 @@ export function parsePaste(input: string, capturedAt = new Date().toISOString(),
       const obj = json as Record<string, unknown>;
       if (Array.isArray(obj.readings)) {
         return (obj.readings as unknown[]).map((row) => {
-          if (!row || typeof row !== "object") throw new Error("readings[] must contain objects.");
+          if (!row || typeof row !== "object") throw new Error("Backup readings must be objects.");
           return parseJsonReading(row as Record<string, unknown>, capturedAt);
         });
       }
@@ -329,7 +329,7 @@ export function parsePaste(input: string, capturedAt = new Date().toISOString(),
   if (!TANK_IDS.some((id) => reading.tanks[id] && hasAny(reading.tanks[id]!))) {
     throw new Error(
       fromScreen.notes[0] ??
-        "Could not find tank figures. Drop Spending (% used) or Grok Bot Settings → Usage, Export CSV from dashboard Usage, or paste % used, reset, and optional $. The Usage token chart is not tank %.",
+        "Could not find fuel numbers. Add a Spending screenshot (% used), Grok Bot Settings → Usage, a finished Cursor Usage spreadsheet, or paste % used, reset, and dollars if shown. The Usage token chart is not tank %.",
     );
   }
   return [reading];

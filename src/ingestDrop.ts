@@ -31,7 +31,7 @@ function isUnfinishedDownload(file: File): boolean {
 
 function unfinishedError(file: File): string {
   if (isCrdownload(file) || /\.csv/i.test(file.name)) return UNFINISHED_CHROME_DOWNLOAD_MESSAGE;
-  return `${file.name} is empty (0 bytes).`;
+  return `${file.name} is empty.`;
 }
 
 function isCsvLike(file: File, text: string): boolean {
@@ -90,13 +90,13 @@ async function loadTesseract(): Promise<TessApi> {
   const probe = await fetch(href, { cache: "no-store" });
   if (!probe.ok) {
     throw new Error(
-      `OCR files missing (${href} → ${probe.status}). Stop the server, run npm install, then npm run dev, and hard-refresh Edge (Ctrl+Shift+R).`,
+      `Could not load the photo reader (${href} → ${probe.status}). Stop the server, run npm install, then npm run dev, and hard-refresh the browser (Ctrl+Shift+R).`,
     );
   }
   const mod = (await import(/* @vite-ignore */ href)) as { default?: TessApi } & TessApi;
   const api = mod.default ?? mod;
   if (typeof api.recognize !== "function") {
-    throw new Error("OCR module loaded but recognize() is missing.");
+    throw new Error("Photo reader loaded but could not read the image.");
   }
   return api;
 }
@@ -147,7 +147,7 @@ export async function ingestFile(
       readings: [],
       extracted: "",
       notes: [],
-      error: `Unsupported file ${file.name}. Drop a screenshot (png/jpg/webp) or a text/JSON export related to usage.`,
+      error: `Unsupported file ${file.name}. Add a screenshot or a text / backup file related to usage.`,
     };
   }
 
@@ -166,7 +166,7 @@ export async function ingestFile(
       readings: restored.readings,
       extracted,
       notes: [
-        `Restored ${restored.readings.length} stored reading(s) from a grok-usage-gauge history JSON. This replaced the in-browser copy (it is not a GitHub database).`,
+        `Restored ${restored.readings.length} stored reading(s) from a Grok Usage Gauge backup. This replaced the copy in this browser.`,
       ],
       restored,
     };
@@ -183,7 +183,7 @@ export async function ingestFile(
         readings,
         extracted,
         notes: [
-          "CSV row dates are the capture times (not the Timestamp field), so a multi-day export dropped today still plots across those days.",
+          "Spreadsheet row dates are the capture times (not the Timestamp field on Add reading), so a multi-day export dropped today still plots across those days.",
           ...(readings[0]?.notes ?? []),
         ],
         error: undefined,

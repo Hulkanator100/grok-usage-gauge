@@ -94,8 +94,8 @@ export function estimateTank(
     note:
       samples.length === 0
         ? isXGrokTank(tank)
-          ? "Need pasted used/cap (or % + used) across 2+ windows to estimate the real 2-hour grant."
-          : "Need spend and % used (≥0.5%) on 2+ readings. Implied $ = spend ÷ (% / 100)."
+          ? "Need two or more X pastes that show replies used of a limit (for example 42 of 50) so we can guess the real 2-hour limit."
+          : "Need two or more readings that show both dollars spent and % used so we can guess the hidden included amount."
         : "",
   };
   if (!samples.length) return base;
@@ -116,11 +116,11 @@ export function estimateTank(
 
   let note: string;
   if (changedAt && previousEra != null && estimate != null) {
-    note = `Newest cluster disagrees with the prior cluster — unpublished ${unit === "usd" ? "dollar grant" : "request cap"} may have changed on the backend. Keep dropping readings; do not scrape session APIs.`;
+    note = `Newer readings disagree with older ones — the hidden ${unit === "usd" ? "dollar amount" : "reply limit"} may have changed. Keep adding screenshots; we never log into Cursor or X for you.`;
   } else if (stable && estimate != null) {
-    note = `Rolling median of ${current.length} samples. Treat as the unpublished figure they will not publish. Re-check when new readings land.`;
+    note = `Middle of ${current.length} readings. Treat this as the figure they will not publish. Check again when you add a new meter.`;
   } else if (estimate != null) {
-    note = `${current.length} sample${current.length === 1 ? "" : "s"} in the current cluster — provisional until ${ESTIMATE_STABLE_SAMPLES}+ agree.`;
+    note = `${current.length} reading${current.length === 1 ? "" : "s"} so far — wait for ${ESTIMATE_STABLE_SAMPLES} that agree before trusting it.`;
   } else {
     note = base.note;
   }

@@ -38,8 +38,8 @@ function confirmImport(args: Parameters<typeof buildIngestReview>[0]) {
   ingestReview = buildIngestReview(args);
   notice =
     ingestReview.changedCount === 0
-      ? "Import stored. No tank metric moved. Dates are on the Review tab — meters did not open automatically."
-      : `${ingestReview.changedCount} tank metric${ingestReview.changedCount === 1 ? "" : "s"} changed. Review dates first; meters did not open automatically.`;
+      ? "Saved. Remaining fuel looks the same as before. Dates are on Review — gauges did not open by themselves."
+      : `${ingestReview.changedCount} tank${ingestReview.changedCount === 1 ? "" : "s"} changed. Check dates on Review first — gauges did not open by themselves.`;
   setTab("review");
 }
 
@@ -55,18 +55,18 @@ function fillOriginBanner() {
   let extra: string;
   if (/\.cvm\.dev$|\.cursor\.sh$|agent\.cvm/i.test(host)) {
     extra =
-      "You do <strong>not</strong> need a terminal on your PC for this tab — the server is the cloud agent. Close your laptop if you want; this Edge copy of the tanks stays. The URL itself dies when the agent sleeps. For a week without the agent, enable GitHub Pages and use <code>https://hulkanator100.github.io/grok-usage-gauge/</code>.";
+      "You do <strong>not</strong> need a terminal on your PC for this tab. Close the laptop if you want; the tanks stay in this browser. This URL goes away when the cloud agent sleeps. For a lasting copy, turn on GitHub Pages and use <code>https://hulkanator100.github.io/grok-usage-gauge/</code>.";
   } else if (/github\.io$/i.test(host)) {
     extra =
-      "You do <strong>not</strong> need a terminal. This is the static GitHub copy. Shut the PC off anytime; reopen this same URL in Edge.";
+      "You do <strong>not</strong> need a terminal. This is the GitHub copy. Shut the PC off anytime; reopen this same address.";
   } else if (host === "127.0.0.1" || host === "localhost") {
     extra =
-      "A terminal is only required while this localhost tab is open (<code>npm run dev</code>). You can close it when you close the tab. History stays in Edge after shutdown.";
+      "A local server is only needed while this address is open. Close it when you close the tab. History stays in this browser after shutdown.";
   } else {
     extra =
-      "A terminal is only needed if you personally ran <code>npm run dev</code>. GitHub Pages needs no terminal.";
+      "A local server is only needed if you started one yourself. The GitHub copy needs none.";
   }
-  el.innerHTML = `This copy is <strong>${here}</strong>. Readings are in <em>this browser on this PC</em> (localStorage). ${extra} Download history JSON for a private-file backup.`;
+  el.innerHTML = `This copy is <strong>${here}</strong>. Readings stay in <em>this browser on this computer</em>. ${extra} Download a backup if you want a private file.`;
 }
 
 function setLastImport(next: LastImport | undefined) {
@@ -142,7 +142,7 @@ async function handleFiles(list: FileList | File[]) {
       return;
     }
     if (!files.length) {
-      error = "Choose files did not receive a file. Pick a screenshot, .txt, .json, or a finished .csv.";
+      error = "No file arrived. Pick a screenshot, a text file, a backup, or a finished Cursor Usage spreadsheet.";
       setLastImport({ names: "none", bytes: 0, extracted: "", summary: error });
       render();
       return;
@@ -180,7 +180,7 @@ async function handleFiles(list: FileList | File[]) {
         before,
         after: state.readings,
         added: result.restored ? state.readings : result.readings,
-        sourceLabel: result.restored ? "Restored history JSON" : "Dropped / chosen files",
+        sourceLabel: result.restored ? "Restored backup" : "Dropped / chosen files",
         names: files.map((f) => f.name).join(", "),
         bytes: files.reduce((n, f) => n + f.size, 0),
         summary: state.lastImport?.summary ?? "",
@@ -341,7 +341,7 @@ function bind() {
         added: readings,
         sourceLabel: "Pasted text",
         names: "paste box",
-        summary: `Saved ${readings.length} reading${readings.length === 1 ? "" : "s"} locally.`,
+        summary: `Saved ${readings.length} reading${readings.length === 1 ? "" : "s"} in this browser.`,
       });
       render();
     } catch (err) {
@@ -352,7 +352,7 @@ function bind() {
 
   document.getElementById("fill-sample")?.addEventListener("click", () => {
     paste = sampleDashboardPaste();
-    notice = "Sample Spending-style paste loaded into the box. Save it to store a reading.";
+    notice = "Sample Spending text is in the box. Press Save pasted reading to store it.";
     error = undefined;
     render();
   });
@@ -405,7 +405,7 @@ function bind() {
     a.download = `grok-usage-gauge-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    notice = "Downloaded readings JSON from this browser’s localStorage (not a file on the server). Keep it in a private gist if you want a copy off this PC.";
+    notice = "Downloaded a backup from this browser (nothing was uploaded). Keep that file somewhere private if you want a copy off this computer.";
     render();
   });
 
@@ -424,11 +424,11 @@ function bind() {
 async function loadBundledCsv() {
   error = undefined;
   notice = undefined;
-  busy = "Loading bundled usage-events CSV…";
+  busy = "Loading the sample Cursor Usage spreadsheet…";
   render();
   try {
     const res = await fetch(new URL("usage-events-2026-09-16.csv", document.baseURI));
-    if (!res.ok) throw new Error(`Could not fetch bundled CSV (${res.status}).`);
+    if (!res.ok) throw new Error(`Could not load the sample Cursor Usage spreadsheet (${res.status}).`);
     const text = await res.text();
     const before = state.readings;
     const readings = parseUsageEventsCsv(text, {
@@ -443,13 +443,13 @@ async function loadBundledCsv() {
       names: "usage-events-2026-09-16.csv",
       bytes: new TextEncoder().encode(text).length,
       extracted: text.slice(0, 4000),
-      summary: `Loaded ${readings.length} daily cumulative readings from the bundled Sep 2026 usage-events CSV.`,
+      summary: `Loaded ${readings.length} daily Cursor spend readings from the sample spreadsheet.`,
     });
     confirmImport({
       before,
       after: state.readings,
       added: readings,
-      sourceLabel: "Bundled usage-events CSV",
+      sourceLabel: "Sample Cursor Usage spreadsheet",
       names: "usage-events-2026-09-16.csv",
       bytes: new TextEncoder().encode(text).length,
       summary: state.lastImport?.summary ?? "",

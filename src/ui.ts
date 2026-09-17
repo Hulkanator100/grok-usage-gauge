@@ -30,8 +30,8 @@ function fmtWhen(d: Date | undefined): string {
 }
 
 function fmtPace(n: number | undefined): string {
-  if (n == null || Number.isNaN(n)) return "Need period start + %";
-  return `${n.toFixed(2)}× calendar`;
+  if (n == null || Number.isNaN(n)) return "Need a start date and % used";
+  return `${n.toFixed(2)}× calendar pace`;
 }
 
 function fillClass(pct: number | undefined): string {
@@ -79,13 +79,20 @@ export function metricsForTank(readings: Reading[], tank: TankId, settings: AppS
   });
 }
 
+function mixLabel(key: string): string {
+  if (key === "grok-bot-default") return "Bot chats";
+  if (key === "grok-bot-automation") return "Scheduled routines";
+  if (key === "grok-bot-cua") return "Computer / browser";
+  return key;
+}
+
 function mixBlock(m: TankMetrics): string {
   if (!m.mixCents) return "";
   const rows = Object.entries(m.mixCents)
     .filter(([, v]) => v != null)
-    .map(([k, v]) => `<li><code>${k}</code> ${v}¢</li>`)
+    .map(([k, v]) => `<li>${escapeHtml(mixLabel(k))} ${v}¢</li>`)
     .join("");
-  return `<div class="mix"><h4>Mix (cents, not tokens)</h4><ul>${rows}</ul></div>`;
+  return `<div class="mix"><h4>Where Bot-week cents went (not token counts)</h4><ul>${rows}</ul></div>`;
 }
 
 function fmtTokens(n: number | undefined): string {
@@ -98,12 +105,12 @@ function fmtTokens(n: number | undefined): string {
 function tokenNote(m: TankMetrics): string {
   if (!m.tokenTotals) return "";
   const t = m.tokenTotals;
-  return `<p class="token-note">Token totals are optional context only (routines re-send conversation; cache reads inflate tokens). Weekly % is cost-based. chart ${fmtTokens(t.total)} · in ${fmtTokens(t.input)} · out ${fmtTokens(t.output)} · cache ${fmtTokens(t.cacheRead)}</p>`;
+  return `<p class="token-note">Token counts from the Usage page are extra context only (routines re-send the chat; cache reads puff the count). Weekly % on Settings is based on dollars. Chart ${fmtTokens(t.total)} · in ${fmtTokens(t.input)} · out ${fmtTokens(t.output)} · cache ${fmtTokens(t.cacheRead)}</p>`;
 }
 
 function rangeBlock(m: TankMetrics): string {
   if (!m.emptyAt) {
-    return `<div class="metric"><span>Range / empty-at</span><strong>Need 2+ timestamped readings</strong></div>`;
+    return `<div class="metric"><span>Empty by</span><strong>Need two dated readings</strong></div>`;
   }
   const vs =
     m.hoursEarlyVsReset == null
@@ -111,7 +118,7 @@ function rangeBlock(m: TankMetrics): string {
       : m.hoursEarlyVsReset > 0
         ? `${m.hoursEarlyVsReset.toFixed(1)} h before reset`
         : `${Math.abs(m.hoursEarlyVsReset).toFixed(1)} h after reset (holds)`;
-  return `<div class="metric"><span>Range / empty-at</span><strong>${fmtWhen(m.emptyAt)}</strong><em>${vs}</em></div>`;
+  return `<div class="metric"><span>Empty by</span><strong>${fmtWhen(m.emptyAt)}</strong><em>${vs}</em></div>`;
 }
 
 function warnBlock(m: TankMetrics, tank: TankId): string {
@@ -123,8 +130,8 @@ function warnBlock(m: TankMetrics, tank: TankId): string {
       ? "empty before weekly reset"
       : "empty before period end";
   return `<div class="accel-warn" role="alert">
-    <strong>Acceleration:</strong> newest interval is ${((w.fasterRatio - 1) * 100).toFixed(0)}% faster than the previous
-    (${w.newestBurnPercentPerHour.toFixed(2)} %/h vs ${w.previousBurnPercentPerHour.toFixed(2)} %/h).
+    <strong>Burning faster:</strong> the newest stretch is ${((w.fasterRatio - 1) * 100).toFixed(0)}% quicker than the one before
+    (${w.newestBurnPercentPerHour.toFixed(2)}% per hour vs ${w.previousBurnPercentPerHour.toFixed(2)}% per hour).
     You will <em>${label}</em> at ${fmtWhen(w.emptyAt)}
     (${w.hoursEarly.toFixed(1)} hours early vs ${fmtWhen(w.periodEnd)}).
   </div>`;
@@ -199,7 +206,7 @@ function renderTankHistoryPanel(tank: TankId, points: HistoryPoint[]): string {
   if (points.length < 2) {
     return `<article class="instrument-card">
       <h3>${meta.title}</h3>
-      <p class="spark-idle">Need 2+ timestamped readings for this tank.</p>
+      <p class="spark-idle">Need two dated readings for this tank.</p>
     </article>`;
   }
   const w = 320;
@@ -236,7 +243,7 @@ function renderOverlay(readings: Reading[], settings: AppSettings, ids: readonly
   const win = timeWindow(series);
   const ready = series.filter((p) => p.length >= 2).length;
   if (!win || ready === 0) {
-    return `<p class="spark-idle">Load two or more timestamped readings (example week works) to draw remaining over the period.</p>`;
+    return `<p class="spark-idle">Load two or more dated readings (example week works) to draw remaining over time.</p>`;
   }
   const w = 960;
   const h = 220;
@@ -277,13 +284,13 @@ export function renderHistoryInstrument(readings: Reading[], settings: AppSettin
   const xPanels = X_GROK_TANK_IDS.map((id) => renderTankHistoryPanel(id, historyPoints(readings, id, settings))).join("");
   return `
     <section class="instrument">
-      <h2>History instrument</h2>
-      <p class="bay-note">Remaining over the captured period (F at the top, E at the bottom). Cursor traces and X Grok traces stay in separate groups — never one summed tank.</p>
+      <h2>History</h2>
+      <p class="bay-note">How much fuel was left over time (full at the top, empty at the bottom). Cursor and X Grok stay in separate charts so they are never mixed into one number.</p>
       <h3 class="instrument-sub">Cursor</h3>
-      ${renderOverlay(readings, settings, CURSOR_TANK_IDS, "Cursor remaining-fuel traces over the captured period")}
+      ${renderOverlay(readings, settings, CURSOR_TANK_IDS, "Cursor remaining fuel over time")}
       <div class="instrument-grid">${cursorPanels}</div>
-      <h3 class="instrument-sub">X Grok request windows</h3>
-      ${renderOverlay(readings, settings, X_GROK_TANK_IDS, "X Grok Light Medium Heavy remaining over the captured period")}
+      <h3 class="instrument-sub">X Grok reply windows</h3>
+      ${renderOverlay(readings, settings, X_GROK_TANK_IDS, "X Grok Light Medium Heavy remaining over time")}
       <div class="instrument-grid three">${xPanels}</div>
     </section>
   `;
@@ -291,7 +298,7 @@ export function renderHistoryInstrument(readings: Reading[], settings: AppSettin
 
 function fmtEstimate(e: TankEstimate): string {
   if (e.estimate == null) return "—";
-  if (e.unit === "requests") return `${Math.round(e.estimate)} requests / 2h`;
+  if (e.unit === "requests") return `${Math.round(e.estimate)} replies / 2 hours`;
   return fmtUsd(e.estimate);
 }
 
@@ -299,22 +306,22 @@ function renderEstimatePanel(e: TankEstimate): string {
   const meta = TANK_META[e.tank];
   const spark =
     e.samples.length >= 2
-      ? `<svg class="spark" viewBox="0 0 200 52" role="img" aria-label="Estimated unpublished metric over time">
+      ? `<svg class="spark" viewBox="0 0 200 52" role="img" aria-label="Hidden-limit estimate over time">
       ${chartWash(`est-${e.tank}`, 200, 52)}
       <path d="${polylineValues(e.samples, 200, 52)}" class="spark-line" fill="none"/>
     </svg>`
-      : `<p class="spark-idle">Need 2+ samples for a trend line</p>`;
+      : `<p class="spark-idle">Need two readings for a trend line</p>`;
   const change =
     e.changedAt && e.previousEra != null && e.estimate != null
-      ? `<p class="accel-warn" role="alert"><strong>Possible backend change:</strong> prior cluster ${e.unit === "usd" ? fmtUsd(e.previousEra) : `${Math.round(e.previousEra)} req`} → now ${fmtEstimate(e)} (${fmtWhen(new Date(e.changedAt))}).</p>`
+      ? `<p class="accel-warn" role="alert"><strong>Possible change:</strong> earlier guess ${e.unit === "usd" ? fmtUsd(e.previousEra) : `${Math.round(e.previousEra)} replies`} → now ${fmtEstimate(e)} (${fmtWhen(new Date(e.changedAt))}).</p>`
       : "";
   const drift =
     e.vsFallback
-      ? `<p class="token-note">Observed ${fmtEstimate(e)} vs fallback ${e.unit === "usd" ? fmtUsd(e.vsFallback.fallback) : `${e.vsFallback.fallback} req`} (${(e.vsFallback.deltaRatio * 100).toFixed(0)}% off). Keep sampling.</p>`
+      ? `<p class="token-note">Guess ${fmtEstimate(e)} vs plan slider ${e.unit === "usd" ? fmtUsd(e.vsFallback.fallback) : `${e.vsFallback.fallback} replies`} (${(e.vsFallback.deltaRatio * 100).toFixed(0)}% off). Keep adding readings.</p>`
       : "";
   return `<article class="instrument-card estimate-card ${e.changedAt ? "changed" : ""} ${e.stable ? "stable" : ""}">
     <h3>${meta.title}</h3>
-    <p class="clock">${e.sampleCount} observation${e.sampleCount === 1 ? "" : "s"} · ${e.stable ? "stable cluster" : "provisional"}</p>
+    <p class="clock">${e.sampleCount} reading${e.sampleCount === 1 ? "" : "s"} · ${e.stable ? "steady" : "still settling"}</p>
     <p class="estimate-value">${fmtEstimate(e)}</p>
     ${spark}
     <p class="instrument-read">${e.note}</p>
@@ -334,8 +341,8 @@ export function renderEstimateInstrument(readings: Reading[], settings: AppSetti
   const rows = estimateAllTanks(readings, fallbacks).map(renderEstimatePanel).join("");
   return `
     <section class="instrument estimate">
-      <h2>Unpublished estimate</h2>
-      <p class="bay-note">This is the endgame: they will not publish Bot-week $, Cursor Models included $, or the real X Light/Medium/Heavy 2-hour caps. Each reading with spend+% (or used/cap) is a sample of <em>implied grant = spend ÷ (% used / 100)</em>, or the observed request cap. The rolling median of the current cluster is the working estimate. If a new cluster disagrees by more than 12%, the backend pool probably moved — keep dropping; do not call session APIs.</p>
+      <h2>Hidden limits</h2>
+      <p class="bay-note">Cursor and X do not publish the true included dollars or the true 2-hour X reply limits. Each reading that has both dollars spent and % used — or replies used of a limit — is one clue. We take the middle of recent clues. If a new batch jumps by more than about 12%, the hidden limit probably changed. Keep adding screenshots; we never log into Cursor or X for you.</p>
       <div class="instrument-grid">${rows}</div>
     </section>
   `;
@@ -426,19 +433,19 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
             ? `<em>${Math.max(0, m.requestCap - m.requestUsed)} of ${m.requestCap} requests left this 2h window</em>`
             : m.remainingUsd != null
               ? `<em>${fmtUsd(m.remainingUsd)} left</em>`
-              : `<em>remaining $ when spend/% known</em>`
+              : `<em>dollars left when spend and % are known</em>`
         }</div>
         <div class="metric"><span>Used</span><strong>${
           m.requestCap != null && m.requestUsed != null
             ? `${m.requestUsed} / ${m.requestCap}`
             : fmtPct(m.percentUsed)
         }</strong>${m.spendUsd != null ? `<em>${fmtUsd(m.spendUsd)} spent</em>` : `<em>how much of this tank is gone</em>`}</div>
-        <div class="metric"><span>Reset / period end</span><strong>${fmtWhen(m.periodEnd)}</strong></div>
-        <div class="metric"><span>Pace</span><strong>${fmtPace(m.pace)}</strong><em>1.00× = on calendar budget</em></div>
+        <div class="metric"><span>Resets</span><strong>${fmtWhen(m.periodEnd)}</strong></div>
+        <div class="metric"><span>Pace</span><strong>${fmtPace(m.pace)}</strong><em>1.00× means on the calendar budget</em></div>
         ${rangeBlock(m)}
-        ${m.impliedGrantUsd != null ? `<div class="metric"><span>Implied grant</span><strong>${fmtUsd(m.impliedGrantUsd)}</strong><em>spend ÷ (% used / 100)</em></div>` : ""}
-        ${m.spendUsd != null ? `<div class="metric"><span>Spend</span><strong>${fmtUsd(m.spendUsd)}</strong>${m.capUsd != null ? `<em>cap ${fmtUsd(m.capUsd)}</em>` : ""}</div>` : ""}
-        ${m.hardStop ? `<div class="metric hard-stop"><span>On-demand</span><strong>$0 cap = hard stop</strong><em>No overflow billing after included pools.</em></div>` : ""}
+        ${m.impliedGrantUsd != null ? `<div class="metric"><span>Hidden included $</span><strong>${fmtUsd(m.impliedGrantUsd)}</strong><em>from spend and % used on this reading</em></div>` : ""}
+        ${m.spendUsd != null ? `<div class="metric"><span>Spent</span><strong>${fmtUsd(m.spendUsd)}</strong>${m.capUsd != null ? `<em>cap ${fmtUsd(m.capUsd)}</em>` : ""}</div>` : ""}
+        ${m.hardStop ? `<div class="metric hard-stop"><span>On-demand</span><strong>$0 cap — extra pay is off</strong><em>No overflow billing after included pools.</em></div>` : ""}
       </dl>
       ${warnBlock(m, tank)}
       ${mixBlock(m)}
@@ -454,7 +461,7 @@ export const APP_TABS = [
   { id: "cursor", label: "Cursor tanks" },
   { id: "xgrok", label: "X Grok" },
   { id: "history", label: "History" },
-  { id: "estimate", label: "Estimate" },
+      { id: "estimate", label: "Hidden limits" },
   { id: "add", label: "Add reading" },
   { id: "review", label: "Review" },
   { id: "log", label: "Readings" },
@@ -480,7 +487,7 @@ function renderReviewPanel(review: IngestReview | undefined): string {
   if (!review) {
     return `<section class="review-panel">
       <h2>Confirm this import</h2>
-      <p class="bay-note">After you drop, choose, or save a paste, this tab lists the dates that were used and whether any tank metric moved. You stay here until you open Cursor tanks or History.</p>
+      <p class="bay-note">After you drop a file, choose a file, or save a paste, this tab lists the dates we used and whether remaining fuel moved. Gauges stay closed until you open them.</p>
     </section>`;
   }
   const changeRows = review.changes
@@ -503,17 +510,17 @@ function renderReviewPanel(review: IngestReview | undefined): string {
     .join("");
   const headline =
     review.changedCount === 0
-      ? "Imported, but no tank metric moved versus what you already had."
+      ? "Saved, but remaining fuel looks the same as before."
       : `${review.changedCount} tank${review.changedCount === 1 ? "" : "s"} changed.`;
   return `<section class="review-panel">
     <h2>Confirm this import</h2>
     <p class="notice">${escapeHtml(headline)}</p>
-    <p class="control-status">Submitted ${formatWhen(review.submittedAt)} · ${escapeHtml(review.sourceLabel)} · ${escapeHtml(review.names)}${review.bytes != null ? ` · ${review.bytes.toLocaleString()} bytes` : ""}</p>
+    <p class="control-status">Submitted ${formatWhen(review.submittedAt)} · ${escapeHtml(review.sourceLabel)} · ${escapeHtml(review.names)}</p>
     <p class="slide-hint">${escapeHtml(review.summary)}</p>
     ${review.error ? `<p class="error" role="alert">${escapeHtml(review.error)}</p>` : ""}
-    <h3 class="instrument-sub">Dates used (not necessarily today)</h3>
-    ${stamps ? `<ol class="review-stamps">${stamps}</ol>` : `<p>No timestamped readings in this batch.</p>`}
-    <h3 class="instrument-sub">Metrics before → after</h3>
+    <h3 class="instrument-sub">Dates we used (may be older than today)</h3>
+    ${stamps ? `<ol class="review-stamps">${stamps}</ol>` : `<p>No dated readings in this batch.</p>`}
+    <h3 class="instrument-sub">Remaining fuel before → after</h3>
     <div class="review-table-wrap">
       <table class="review-table">
         <thead><tr><th>Tank</th><th>Before</th><th>After</th><th></th></tr></thead>
@@ -575,11 +582,11 @@ export function renderApp(args: {
       <div class="mast-row">
         <div class="horizon" aria-hidden="true"></div>
         <div>
-          <p class="eyebrow">Cursor tanks · X Grok windows · never one bar</p>
+          <p class="eyebrow">Separate tanks for Cursor and Grok on X</p>
           <h1>Grok Usage Gauge</h1>
         </div>
       </div>
-      <p class="lede-short">Drop a file or paste a meter. Nothing leaves this browser.</p>
+      <p class="lede-short">Add a screenshot or paste what you see on the meter. Nothing is sent away from this browser.</p>
       ${args.error ? `<p class="error" role="alert">${escapeHtml(args.error)}</p>` : ""}
       ${args.notice ? `<p class="notice">${escapeHtml(args.notice)}</p>` : ""}
       ${args.busy ? `<p class="notice" role="status">${escapeHtml(args.busy)}</p>` : ""}
@@ -589,7 +596,7 @@ export function renderApp(args: {
       ${tabButton("cursor", "Cursor tanks", tab)}
       ${tabButton("xgrok", "X Grok", tab)}
       ${tabButton("history", "History", tab)}
-      ${tabButton("estimate", "Estimate", tab)}
+      ${tabButton("estimate", "Hidden limits", tab)}
       ${tabButton("add", "Add reading", tab)}
       ${tabButton("review", "Review", tab, args.review ? `<span class="tab-count">${args.review.changedCount}</span>` : "")}
       ${tabButton("log", "Readings", tab, n ? `<span class="tab-count">${n}</span>` : "")}
@@ -599,15 +606,15 @@ export function renderApp(args: {
       "cursor",
       tab,
       `<h2 class="bay-title">Cursor fuel tanks</h2>
-      <p class="bay-note">Keep these separate. If Grok Bot launches a Cursor cloud agent, that run bills Cursor Models / Other Models / maybe on-demand as well as the Bot week — show both, do not merge. Plans do not stack: Cursor + SuperGrok + X Premium+ for Grok Bot = one Bot grant (the larger) on the Cursor account.</p>
+      <p class="bay-note">Four separate tanks. If Grok Bot starts a Cursor cloud agent, that run can spend Cursor Models, Other Models, and extra paid usage as well as the Bot week — watch each tank; do not add them together. Extra Grok plans on the same Cursor account do not stack: you get one Bot week (the larger amount).</p>
       <div class="tank-grid">${cursorCards}</div>`,
     )}
 
     ${tabPanel(
       "xgrok",
       tab,
-      `<h2 class="bay-title">X Grok request windows</h2>
-      <p class="bay-note">Grok on x.com / the X app. Light, Medium, and Heavy are three request grants on a rolling ~2 hour clock. They are not Cursor Models, not Cursor Grok Bot week, and not grok.com SuperGrok weekly %. X developer API usage credits stay out of these tanks. Fallback caps are typical published-range numbers for the X plan you pick; a paste of 42/50 always wins.</p>
+      `<h2 class="bay-title">X Grok reply windows</h2>
+      <p class="bay-note">Grok on x.com and the X app. Light, Medium, and Heavy are three separate reply counts that refill about every two hours. They are not your Cursor dollar tanks, not Grok Bot week, and not grok.com SuperGrok. If you paste Light 42 of 50, that number wins over the plan guesses on Add reading. X developer prepaid credits stay out of these tanks.</p>
       <div class="tank-grid three">${xCards}</div>`,
     )}
 
@@ -620,7 +627,8 @@ export function renderApp(args: {
       `<section class="console">
       <div class="panel save-panel">
         <h2>Save a reading</h2>
-        <p class="slide-hint">Files ingest as soon as you drop or choose them. Pasted text needs the Save button. Nothing leaves this browser.</p>
+        <p class="slide-hint">Drop or choose a file and we read it right away. If you paste text, press Save. Nothing is sent away from this browser.</p>
+        <p class="bay-note">What we look for: % used and reset time on Spending or Grok Bot Settings; dollars spent if shown; Light / Medium / Heavy counts on X (like 42 of 50). A token chart is not tank %.</p>
         ${args.error ? `<p class="error" role="alert">${escapeHtml(args.error)}</p>` : ""}
         ${args.notice ? `<p class="notice">${escapeHtml(args.notice)}</p>` : ""}
         ${args.busy ? `<p class="notice" role="status">${escapeHtml(args.busy)}</p>` : ""}
@@ -631,32 +639,32 @@ export function renderApp(args: {
             <label class="select-field">When this screenshot or paste was taken
               <input id="captured-at" type="datetime-local" value="${args.capturedAtLocal}" />
             </label>
-            <p class="slide-hint">Fallback only. Dropped photos, OCR text, filenames, file dates, and CSV rows keep their own times so a same-day dump of older shots still plots across those days.</p>
+            <p class="slide-hint">Used only if the file does not already have a date. Photos, text in the image, the file name, and rows in a Cursor Usage spreadsheet keep their own times, so older shots dropped today still plot on those days.</p>
           </li>
           <li class="save-step">
             <h3>2 · Drop or choose a file</h3>
             <div id="drop-zone" class="drop-zone" role="button" tabindex="0">
-              <p class="drop-lead"><strong>Drop here</strong> or choose — ingest starts immediately.</p>
+              <p class="drop-lead"><strong>Drop here</strong> or choose a file — we start reading it right away.</p>
               <ul class="type-chips">
                 <li>Spending / Settings screenshot</li>
-                <li>usage-events .csv</li>
-                <li>.txt / .json</li>
+                <li>Cursor Usage spreadsheet</li>
+                <li>Text or backup file</li>
               </ul>
               <input id="file-input" class="file-input-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.csv,text/csv,.txt,.md,.json,.log" multiple />
               <button type="button" id="choose-files">Choose files</button>
               <p class="chosen">${args.lastImport ? escapeHtml(args.lastImport.names) : "No file chosen yet"}</p>
-              <p class="slide-hint">Rejects empty Chrome <code>.crdownload</code>. grok.com SuperGrok Usage is not a Cursor tank. Ctrl+V an image anywhere on this page.</p>
+              <p class="slide-hint">Skip unfinished Chrome downloads. grok.com SuperGrok is a different meter. You can also paste an image with Ctrl+V anywhere on this page.</p>
             </div>
             ${
               args.lastImport
                 ? `<div id="ingest-output" class="ingest-output" role="status">
               <h3>Last file result</h3>
-              <p><strong>${escapeHtml(args.lastImport.names)}</strong> · ${args.lastImport.bytes.toLocaleString()} bytes</p>
+              <p><strong>${escapeHtml(args.lastImport.names)}</strong></p>
               <p>${escapeHtml(args.lastImport.summary)}</p>
               ${
                 args.lastImport.extracted
-                  ? `<details class="extract-details"><summary>Extracted text</summary><pre class="extract">${escapeHtml(args.lastImport.extracted.slice(0, 4000))}</pre></details>`
-                  : `<p class="muted">No text extracted from this file.</p>`
+                  ? `<details class="extract-details"><summary>Text we read</summary><pre class="extract">${escapeHtml(args.lastImport.extracted.slice(0, 4000))}</pre></details>`
+                  : `<p class="muted">No readable text in this file.</p>`
               }
             </div>`
                 : ""
@@ -664,64 +672,64 @@ export function renderApp(args: {
           </li>
           <li class="save-step">
             <h3>3 · Or paste text</h3>
-            <label class="select-field">Dashboard / CLI / OCR text
+            <label class="select-field">Text from Spending, Settings, /usage, or X
               <textarea id="paste" rows="7" placeholder="Weekly usage 61% … or Light 42/100">${escapeHtml(args.paste)}</textarea>
             </label>
             <div class="row paste-actions">
               <button type="button" id="save-paste">Save pasted reading</button>
               <button type="button" id="fill-sample" class="ghost">Fill sample paste</button>
             </div>
-            <p class="slide-hint">Fill sample only loads the box. Save pasted reading writes tanks.</p>
+            <p class="slide-hint">Fill sample only loads the box. Save pasted reading stores the tanks.</p>
           </li>
         </ol>
       </div>
       <div class="panel controls-panel">
-        <h2>Local controls</h2>
-        <p class="control-status">${n} stored reading${n === 1 ? "" : "s"}. Empty-at needs 2. Acceleration needs 3. Unpublished estimate needs spend+% or used/cap.</p>
+        <h2>This browser only</h2>
+        <p class="control-status">${n} stored reading${n === 1 ? "" : "s"}. Empty-by date needs two readings. A speed-up warning needs three. Hidden-limit guesses need dollars and % used, or replies used of a limit.</p>
 
         <div class="control-block sample-io">
           <h3>Sample data</h3>
-          <p class="slide-hint">Nothing here talks to Cursor or X. Buttons either <strong>replace</strong> the readings in this browser or <strong>copy / wipe</strong> that local store.</p>
+          <p class="slide-hint">These buttons never talk to Cursor or X. They either <strong>replace</strong> the readings in this browser or <strong>copy / wipe</strong> what is stored here.</p>
 
-          <h4 class="io-heading">Inputs · write the tanks</h4>
+          <h4 class="io-heading">What these buttons put in</h4>
           <ul class="io-list">
             <li>
               <button type="button" id="load-example">Load example week</button>
-              <p><span class="io-k">In</span> bundled 2-reading demo (no file). <span class="io-k">Out</span> replaces stored history with 4 Cursor tanks + 3 X windows, on-pace Bot week.</p>
+              <p><span class="io-k">Puts in</span> a two-reading demo (no file). <span class="io-k">Result</span> replaces stored history with four Cursor tanks and three X windows, on-pace Bot week.</p>
             </li>
             <li>
               <button type="button" id="load-accel">Load accelerating week</button>
-              <p><span class="io-k">In</span> bundled 3-reading demo (no file). <span class="io-k">Out</span> replaces history; Grok Bot should warn it will empty before weekly reset.</p>
+              <p><span class="io-k">Puts in</span> a three-reading demo (no file). <span class="io-k">Result</span> replaces history; Grok Bot should warn it will empty before weekly reset.</p>
             </li>
             <li>
-              <button type="button" id="load-sample-csv">Load bundled usage-events CSV</button>
-              <p><span class="io-k">In</span> shipped Cursor usage-events CSV. <span class="io-k">Out</span> daily Cursor spend readings appended from that file (not X windows).</p>
+              <button type="button" id="load-sample-csv">Load sample Cursor Usage spreadsheet</button>
+              <p><span class="io-k">Puts in</span> a shipped Cursor Usage export. <span class="io-k">Result</span> daily Cursor spend readings from that file (not X windows).</p>
             </li>
           </ul>
 
-          <h4 class="io-heading">Outputs · copy or wipe this browser</h4>
+          <h4 class="io-heading">Copy or wipe what this browser stored</h4>
           <ul class="io-list">
             <li>
-              <button type="button" id="export-json" class="ghost">Download history JSON</button>
-              <p><span class="io-k">In</span> readings + settings in localStorage. <span class="io-k">Out</span> a private <code>.json</code> file on this PC (not uploaded).</p>
+              <button type="button" id="export-json" class="ghost">Download a backup</button>
+              <p><span class="io-k">From</span> readings and settings in this browser. <span class="io-k">Result</span> a private file on this computer (not uploaded).</p>
             </li>
             <li>
               <div class="io-action">
-                <button type="button" id="restore-json" class="ghost">Restore history JSON</button>
+                <button type="button" id="restore-json" class="ghost">Restore a backup</button>
                 <input id="restore-json-input" type="file" accept="application/json,.json" hidden />
               </div>
-              <p><span class="io-k">In</span> a previously downloaded gauge JSON. <span class="io-k">Out</span> replaces this browser’s stored readings and settings.</p>
+              <p><span class="io-k">Puts in</span> a backup you downloaded earlier. <span class="io-k">Result</span> replaces this browser’s stored readings and settings.</p>
             </li>
             <li>
               <button type="button" id="clear-data" class="danger">Clear local data</button>
-              <p><span class="io-k">In</span> confirm dialog. <span class="io-k">Out</span> empty tanks, default sliders, paste box cleared. The JSON file on disk is untouched.</p>
+              <p><span class="io-k">Asks</span> you to confirm. <span class="io-k">Result</span> empty tanks, default sliders, paste box cleared. A backup file on disk is untouched.</p>
             </li>
           </ul>
         </div>
 
         <div class="control-block">
           <h3>Cursor month</h3>
-          <p class="slide-hint">Other Models included $ follows the plan. On-demand is a monthly USD cap; $0 is a hard stop.</p>
+          <p class="slide-hint">Other Models included dollars follow the plan. Extra paid usage is a monthly dollar cap; $0 turns extra pay off.</p>
           <label class="select-field">Plan
             <select id="plan">
               <option value="pro" ${args.settings.plan === "pro" ? "selected" : ""}>Pro · Other Models ${fmtUsd(OTHER_MODELS_INCLUDED_USD.pro)}</option>
@@ -747,7 +755,7 @@ export function renderApp(args: {
           ${sliderField({
             id: "ondemand-cap",
             label: "On-demand monthly cap",
-            hint: "Paid overflow after included pools. Slide to $0 for a hard stop.",
+            hint: "Paid extra after included pools. Slide to $0 to turn extra pay off.",
             min: 0,
             max: 200,
             step: 5,
@@ -758,7 +766,7 @@ export function renderApp(args: {
 
         <div class="control-block">
           <h3>X Grok · 2-hour windows</h3>
-          <p class="slide-hint">Three separate request tanks on grok.x.com / the X app: Light (Fast), Medium (Think), and Heavy. They are not Cursor $, not Grok Bot week, and not grok.com SuperGrok. A paste such as 42/100 overrides these fallbacks.</p>
+          <p class="slide-hint">Three separate reply tanks on grok.x.com / the X app: Light (Fast), Medium (Think), and Heavy. They are not Cursor dollars, not Grok Bot week, and not grok.com SuperGrok. A paste such as 42 of 100 overrides these guesses.</p>
           <label class="select-field">X Grok plan
             <select id="x-plan" aria-describedby="x-plan-legend">
               <option value="free" ${args.settings.xPlan === "free" ? "selected" : ""}>${xPlanOptionLabel("free")}</option>
@@ -772,7 +780,7 @@ export function renderApp(args: {
           ${sliderField({
             id: "x-light-cap",
             label: "Light (Fast)",
-            hint: "Quick replies. Requests in the current ~2-hour window.",
+            hint: "Quick replies. How many in the current ~2-hour window.",
             min: 1,
             max: 200,
             step: 1,
@@ -782,7 +790,7 @@ export function renderApp(args: {
           ${sliderField({
             id: "x-medium-cap",
             label: "Medium (Think)",
-            hint: "Deeper reasoning. Requests in the current ~2-hour window.",
+            hint: "Deeper reasoning. How many in the current ~2-hour window.",
             min: 1,
             max: 80,
             step: 1,
@@ -792,7 +800,7 @@ export function renderApp(args: {
           ${sliderField({
             id: "x-heavy-cap",
             label: "Heavy",
-            hint: "Longest / heaviest replies. Requests in the current ~2-hour window.",
+            hint: "Longest / heaviest replies. How many in the current ~2-hour window.",
             min: 1,
             max: 40,
             step: 1,
@@ -801,7 +809,7 @@ export function renderApp(args: {
           })}
         </div>
 
-        <p class="out-of-v1">Not tanks: grok.com SuperGrok week, xAI prepaid ticks, X developer <code>GET /2/usage/credits</code>, Cursor tab completions. Cursor charge order: Bot week → promo → on-demand.</p>
+        <p class="out-of-v1">Not tanks: grok.com SuperGrok week, xAI prepaid ticks, X developer prepaid credits, Cursor tab completions. Cursor bills Bot week first, then promo, then extra pay.</p>
       </div>
     </section>`,
     )}
@@ -812,7 +820,7 @@ export function renderApp(args: {
       "log",
       tab,
       `<section class="history">
-      <h2>Timestamped readings</h2>
+      <h2>Readings you saved</h2>
       ${n ? `<ol>${history}</ol>` : `<p>None yet. Load an example week or paste from Spending.</p>`}
     </section>`,
     )}
@@ -820,18 +828,18 @@ export function renderApp(args: {
     <footer class="about-foot">
       <details>
         <summary>How this gauge works</summary>
-        <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a> for Cursor tanks. Paste Grok-on-X Light / Medium / Heavy request counts (often a 2-hour window) into the X tanks — those are not Cursor $. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills Cursor spend. <strong>grok.com</strong> SuperGrok Usage is rejected. Enough timestamped readings (spend+% or used/cap) roll into an <strong>unpublished estimate</strong> — implied grant $ or observed 2h request caps — and warn if a new cluster says the backend pool moved. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
+        <p class="lede">Drop screenshots or files from the places below. Best Cursor sources: <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a>. For Grok on X, paste Light / Medium / Heavy reply counts (they refill about every two hours) — those are not Cursor dollars. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">Cursor Usage spreadsheet</a> fills Cursor spend. <strong>grok.com</strong> SuperGrok is a different meter and is rejected. Enough dated readings with spend and % used (or replies used of a limit) roll into a <strong>hidden-limit guess</strong>, and we warn if a new batch says the limit moved. Readings stay in this browser. We never ask for passwords, login keys, or Cursor database files.</p>
         <p id="origin-banner" class="origin-banner" role="note"></p>
         <section class="surfaces">
-          <h2>How each surface reports history</h2>
-          <p class="bay-note">Grok Bot chats, routines, CUA, and MCP share one weekly Cursor-account grant. They do not each export a usage file. Drop the meter screenshot, not the conversation.</p>
+          <h2>Where to look</h2>
+          <p class="bay-note">Grok Bot chats, routines, computer use, and plugins share one weekly Cursor-account grant. They do not each export a usage file. Drop the meter screenshot, not the conversation.</p>
           <div class="surface-grid">
             ${SURFACE_GUIDE.map(
               (s) => `<article class="surface-card" data-fills="${s.fillsTank}">
                 <h3>${s.title}</h3>
-                <p><span>History</span> ${s.history}</p>
-                <p><span>Drop</span> ${s.drop}</p>
-                <p><span>Tank</span> ${s.tank}</p>
+                <p><span>What it shows</span> ${s.history}</p>
+                <p><span>What to add</span> ${s.drop}</p>
+                <p><span>Which tank</span> ${s.tank}</p>
               </article>`,
             ).join("")}
           </div>
@@ -850,12 +858,12 @@ function escapeHtml(s: string): string {
 }
 
 export function formatUsdCap(n: number, hardStop = false): string {
-  if (hardStop && n === 0) return "$0 hard stop";
+  if (hardStop && n === 0) return "$0 extra pay off";
   return fmtUsd(n);
 }
 
 export function formatRequestCap(n: number): string {
-  return `${Math.round(n)} req`;
+  return `${Math.round(n)} requests`;
 }
 
 function xPlanName(plan: XGrokPlan): string {
@@ -866,12 +874,12 @@ function xPlanName(plan: XGrokPlan): string {
 
 export function xPlanOptionLabel(plan: XGrokPlan): string {
   const c = X_GROK_CAPS[plan];
-  return `${xPlanName(plan)} — Light ${c.light} / Medium ${c.medium} / Heavy ${c.heavy} per 2h`;
+  return `${xPlanName(plan)} — Light ${c.light} / Medium ${c.medium} / Heavy ${c.heavy} each 2 hours`;
 }
 
 function xPlanLegend(plan: XGrokPlan): string {
   const c = X_GROK_CAPS[plan];
-  return `Fallback for ${xPlanName(plan)}: <strong>Light (Fast) ${c.light}</strong> · <strong>Medium (Think) ${c.medium}</strong> · <strong>Heavy ${c.heavy}</strong> requests each ~2-hour window. Sliders below stay in sync until a paste overrides them.`;
+  return `Guesses for ${xPlanName(plan)} until you paste real counts: <strong>Light (Fast) ${c.light}</strong> · <strong>Medium (Think) ${c.medium}</strong> · <strong>Heavy ${c.heavy}</strong> replies each ~2-hour window. Sliders below stay in sync until a paste overrides them.`;
 }
 
 function sliderFillPct(min: number, max: number, value: number): number {

@@ -76,7 +76,8 @@ describe("local controls sliders", () => {
     expect(html).toContain("data-tab=\"review\"");
     expect(html).toContain("Confirm this import");
     expect(html).toContain("about-foot");
-    expect(html).toContain("How this gauge works");
+    expect(html).toContain("What we look for");
+    expect(html).toContain("Nothing is sent away from this browser.");
     expect(html).toContain("lede-short");
     expect(html).toMatch(/id="panel-add"[^>]*hidden/);
     expect(html).toContain("sample-io");
@@ -85,10 +86,10 @@ describe("local controls sliders", () => {
     expect(html).toContain("1 · Timestamp");
     expect(html).toContain("2 · Drop or choose a file");
     expect(html).toContain("3 · Or paste text");
-    expect(html).toContain("same-day dump of older shots");
+    expect(html).toContain("older shots dropped today still plot on those days");
     expect(html).toContain("file-input-hidden");
-    expect(html).toContain("Inputs · write the tanks");
-    expect(html).toContain("Outputs · copy or wipe this browser");
+    expect(html).toContain("What these buttons put in");
+    expect(html).toContain("Copy or wipe what this browser stored");
     expect(html).toContain("io-k");
     expect(html).toContain("Load example week");
     expect(html).toContain("Cursor month");
@@ -96,8 +97,8 @@ describe("local controls sliders", () => {
     expect(html).toContain('id="ondemand-cap" type="range"');
     expect(html).toContain('id="ondemand-cap-out"');
     expect(html).toContain("$20.00");
-    expect(html).toContain("100 req");
-    expect(html).toContain("Light 100 / Medium 30 / Heavy 10 per 2h");
+    expect(html).toContain("100 requests");
+    expect(html).toContain("Light 100 / Medium 30 / Heavy 10 each 2 hours");
     expect(html).toContain("Light (Fast) 100");
     expect(html).toContain("Medium (Think) 30");
     expect(html).not.toContain("· L ");
@@ -116,11 +117,11 @@ describe("local controls sliders", () => {
   });
 
   it("formats slider numerals for USD caps and request windows", () => {
-    expect(formatUsdCap(0, true)).toBe("$0 hard stop");
+    expect(formatUsdCap(0, true)).toBe("$0 extra pay off");
     expect(formatUsdCap(20, true)).toBe("$20.00");
-    expect(formatRequestCap(30)).toBe("30 req");
-    expect(xPlanOptionLabel("premiumPlus")).toBe("Premium+ — Light 100 / Medium 30 / Heavy 10 per 2h");
-    expect(xPlanOptionLabel("free")).toBe("Free — Light 20 / Medium 10 / Heavy 5 per 2h");
+    expect(formatRequestCap(30)).toBe("30 requests");
+    expect(xPlanOptionLabel("premiumPlus")).toBe("Premium+ — Light 100 / Medium 30 / Heavy 10 each 2 hours");
+    expect(xPlanOptionLabel("free")).toBe("Free — Light 20 / Medium 10 / Heavy 5 each 2 hours");
   });
 });
 
@@ -151,8 +152,8 @@ describe("import review panel", () => {
     expect(html).toContain("Submitted");
     expect(html).toContain("Dropped / chosen files");
     expect(html).toContain("cursor-spending.txt");
-    expect(html).toContain("Dates used (not necessarily today)");
-    expect(html).toContain("Metrics before → after");
+    expect(html).toContain("Dates we used (may be older than today)");
+    expect(html).toContain("Remaining fuel before → after");
     expect(html).toContain("Changed");
     expect(html).toContain("review-to-cursor");
     expect(html).toContain('aria-selected="true"');
@@ -168,11 +169,11 @@ describe("history instrument", () => {
       paste: "",
       capturedAtLocal: "2026-09-16T18:00",
     });
-    expect(html).toContain("History instrument");
-    expect(html).toContain("Cursor remaining-fuel traces over the captured period");
-    expect(html).toContain("X Grok request windows");
+    expect(html).toContain("How much fuel was left over time");
+    expect(html).toContain("Cursor remaining fuel over time");
+    expect(html).toContain("X Grok reply windows");
     expect(html).toContain('class="spark"');
-    expect(html).toContain("Unpublished estimate");
+    expect(html).toContain("Hidden limits");
     expect(html.match(/class="instrument-card"/g)?.length).toBeGreaterThanOrEqual(7);
     const accel = renderHistoryInstrument(
       buildAcceleratingWeek(new Date("2026-09-16T18:00:00Z")),

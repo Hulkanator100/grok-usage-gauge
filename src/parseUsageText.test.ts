@@ -247,7 +247,7 @@ describe("unfinished Chrome download", () => {
   it("rejects empty .crdownload", async () => {
     const file = new File([], "usage-events-2026-09-16 (1).csv.crdownload", { type: "text/csv" });
     const result = await ingestFile(file, CAPTURE);
-    expect(result.error).toMatch(/unfinished Chrome download/i);
+    expect(result.error).toMatch(/still downloading in Chrome/i);
     expect(result.readings).toHaveLength(0);
   });
 });

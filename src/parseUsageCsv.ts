@@ -2,10 +2,10 @@ import type { MixCents, Reading, TankId, TankSnapshot, TokenTotals } from "./typ
 import { TANK_IDS } from "./types";
 
 export const UNFINISHED_CHROME_DOWNLOAD_MESSAGE =
-  "This file is an unfinished Chrome download (.crdownload) with no usage-event rows (0 bytes). Wait for the download to finish, or re-export a complete CSV from https://cursor.com/dashboard/usage.";
+  "This file is still downloading in Chrome (it looks unfinished). Wait until it finishes, then add the complete Cursor Usage spreadsheet from https://cursor.com/dashboard/usage.";
 
 export const USAGE_CSV_HEADERS_MESSAGE =
-  "Need a Cursor usage-events CSV with headers Date, Kind, Model, and Cost (matched by name). Export from https://cursor.com/dashboard/usage.";
+  "Need a Cursor Usage spreadsheet with columns Date, Kind, Model, and Cost. Export from https://cursor.com/dashboard/usage.";
 
 const ZERO_COST_LABELS = /^(included|free|-|n\/a|na|—|–)$/i;
 
@@ -318,7 +318,7 @@ export function parseUsageEventsCsv(text: string, options: ParseUsageCsvOptions 
         source: options.source ?? "csv",
         surface: "cursor-usage-events",
         notes: [
-          "Usage-events CSV is spend (and mix cents), not unpublished Bot/Cursor Models %. Other Models / on-demand % use plan/cap.",
+          "This spreadsheet is dollars spent (and Bot mix cents), not hidden Bot or Cursor Models %. Other Models and extra-pay % use your plan and cap sliders.",
         ],
         drop: options.fileName
           ? {
@@ -333,7 +333,7 @@ export function parseUsageEventsCsv(text: string, options: ParseUsageCsvOptions 
   }
 
   if (!readings.length) {
-    throw new Error("Usage CSV parsed but produced no daily readings.");
+    throw new Error("That Cursor Usage spreadsheet had no daily spend we could save.");
   }
   return readings;
 }
