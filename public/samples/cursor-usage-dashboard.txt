@@ -1,0 +1,24 @@
+Usage
+Sep 10 - Sep 16
+1d 7d 30d MTD Last month
+Total tokens
+108.1M
+Included
+104.3M
+On-demand
+0
+Your Usage
+Your usage per day across this billing period
+Cumulative Tokens
+Group By Model
+Export CSV
+Date (UTC) Type Model Tokens Cost
+Sep 16, 09:20 PM Free cursor-grok-4.6-medium - Free
+Sep 16, 09:17 PM Included cursor-grok-4.6-medium 2.7M Included
+cursor-grok-4.6-high-fast
+cursor-grok-4.6-medium
+claude-4.5-sonnet
+cursor-grok-4.6-xhigh
+gemini-3.1-pro
+Spending
+Pro+

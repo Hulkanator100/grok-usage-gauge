@@ -1,0 +1,5 @@
+Grok on X
+Light 42 / 100 requests
+Medium 11 / 30
+Heavy 2 / 10
+Resets in 1 hour 18 minutes

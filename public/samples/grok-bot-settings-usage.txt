@@ -1,0 +1,7 @@
+Weekly usage 72%
+Resets in 2 days
+On-demand usage
+Billed through Cursor
+$0.00
+On-demand monthly limit $20
+Mix cents: grok-bot-default 320 grok-bot-automation 90 grok-bot-cua 40
