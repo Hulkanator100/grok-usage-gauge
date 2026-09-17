@@ -525,6 +525,26 @@ textarea, input, select {
   font: inherit;
 }
 
+/* Native <select> menus are often a light OS list. Keep the closed field
+   starlight-on-charcoal, but force option rows to dark-on-light so they
+   stay readable before hover/selection. */
+select {
+  color-scheme: dark;
+  background-color: #161616;
+  color: #f4f4f4;
+}
+option,
+optgroup {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #111111;
+}
+option:checked,
+option:hover {
+  background-color: var(--amber);
+  color: #111111;
+}
+
 textarea:focus, input:focus, select:focus {
   outline: 1px solid var(--amber);
   border-color: var(--amber);
