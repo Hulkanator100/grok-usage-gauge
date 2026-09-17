@@ -97,7 +97,7 @@ describe("local controls sliders", () => {
     expect(html).toContain('id="ondemand-cap" type="range"');
     expect(html).toContain('id="ondemand-cap-out"');
     expect(html).toContain("$20.00");
-    expect(html).toContain("100 requests");
+    expect(html).toContain("100 replies");
     expect(html).toContain("Light 100 / Medium 30 / Heavy 10 each 2 hours");
     expect(html).toContain("Light (Fast) 100");
     expect(html).toContain("Medium (Think) 30");
@@ -119,7 +119,7 @@ describe("local controls sliders", () => {
   it("formats slider numerals for USD caps and request windows", () => {
     expect(formatUsdCap(0, true)).toBe("$0 extra pay off");
     expect(formatUsdCap(20, true)).toBe("$20.00");
-    expect(formatRequestCap(30)).toBe("30 requests");
+    expect(formatRequestCap(30)).toBe("30 replies");
     expect(xPlanOptionLabel("premiumPlus")).toBe("Premium+ — Light 100 / Medium 30 / Heavy 10 each 2 hours");
     expect(xPlanOptionLabel("free")).toBe("Free — Light 20 / Medium 10 / Heavy 5 each 2 hours");
   });

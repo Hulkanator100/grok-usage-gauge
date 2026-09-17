@@ -863,7 +863,7 @@ export function formatUsdCap(n: number, hardStop = false): string {
 }
 
 export function formatRequestCap(n: number): string {
-  return `${Math.round(n)} requests`;
+  return `${Math.round(n)} replies`;
 }
 
 function xPlanName(plan: XGrokPlan): string {
