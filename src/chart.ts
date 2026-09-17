@@ -1,5 +1,5 @@
 import type { AppSettings, Reading, TankId, TankSnapshot } from "./types";
-import { otherModelsCapUsd, percentFromRequests } from "./metrics";
+import { impliedGrantUsd, otherModelsCapUsd, percentFromRequests } from "./metrics";
 import { sortedReadings } from "./storage";
 
 export interface HistoryPoint {
@@ -8,13 +8,19 @@ export interface HistoryPoint {
   remaining: number;
 }
 
-function usedFromSnap(snap: TankSnapshot, fallbackCapUsd?: number, fallbackRequestCap?: number): number | undefined {
+function usedFromSnap(
+  snap: TankSnapshot,
+  fallbackCapUsd?: number,
+  fallbackRequestCap?: number,
+  grantUsd?: number,
+): number | undefined {
   if (snap.percentUsed != null && Number.isFinite(snap.percentUsed)) return snap.percentUsed;
   const fromReq = percentFromRequests(snap.requestUsed, snap.requestCap ?? fallbackRequestCap);
   if (fromReq != null) return fromReq;
   const cap = snap.capUsd ?? fallbackCapUsd;
   if (snap.spendUsd != null && cap != null && cap > 0) return (snap.spendUsd / cap) * 100;
   if (cap === 0 && snap.spendUsd != null) return snap.spendUsd > 0 ? 100 : 0;
+  if (grantUsd != null && grantUsd > 0 && snap.spendUsd != null) return (snap.spendUsd / grantUsd) * 100;
   return undefined;
 }
 
@@ -34,11 +40,16 @@ function fallbackRequestCap(tank: TankId, settings: AppSettings): number | undef
 export function historyPoints(readings: Reading[], tank: TankId, settings: AppSettings): HistoryPoint[] {
   const cap = fallbackCap(tank, settings);
   const reqCap = fallbackRequestCap(tank, settings);
+  const grantUsd = sortedReadings(readings)
+    .map((r) => r.tanks[tank])
+    .reverse()
+    .map((snap) => (snap ? impliedGrantUsd(snap.spendUsd, snap.percentUsed) : undefined))
+    .find((g): g is number => g != null && g > 0);
   const out: HistoryPoint[] = [];
   for (const r of sortedReadings(readings)) {
     const snap = r.tanks[tank];
     if (!snap) continue;
-    const used = usedFromSnap(snap, cap, reqCap);
+    const used = usedFromSnap(snap, cap, reqCap, grantUsd);
     if (used == null) continue;
     const clamped = Math.max(0, Math.min(100, used));
     out.push({ t: new Date(r.capturedAt).getTime(), used: clamped, remaining: 100 - clamped });

@@ -312,9 +312,8 @@ a { color: var(--amber); }
   stroke-width: 1;
 }
 
-.fuel-gauge.unknown-needle .needle-g,
-.fuel-gauge[data-empty="true"] .needle-g {
-  transform: rotate(-90deg);
+.fuel-gauge .needle-g {
+  transform: rotate(var(--needle, -90deg));
   transform-box: view-box;
   transform-origin: 100px 100px;
 }
