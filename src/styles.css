@@ -166,9 +166,9 @@ body {
 }
 .review-table tbody th { color: var(--ink); font-weight: 600; }
 .review-table .when { margin-top: 0.2rem; font-size: 0.75rem; color: var(--dim); }
-.review-table tr.changed td:last-child,
-.review-table tr.changed tbody th { color: var(--amber); }
-.review-table tr.changed { background: rgba(232, 160, 23, 0.08); }
+.review-table tbody tr.changed th,
+.review-table tbody tr.changed td:last-child { color: var(--amber); }
+.review-table tbody tr.changed { background: rgba(232, 160, 23, 0.08); }
 
 .lede, .bay-note, .surfaces, .out-of-v1, .token-note {
   color: var(--dim);

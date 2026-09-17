@@ -95,6 +95,10 @@ function render() {
     review: ingestReview,
   });
   bind();
+  if (activeTab === "review") {
+    document.getElementById("panel-review")?.scrollIntoView({ block: "nearest" });
+    document.getElementById("tab-review")?.focus({ preventScroll: true });
+  }
 }
 
 async function snapshotFiles(list: FileList | File[]): Promise<File[]> {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatRequestCap, formatUsdCap, fuelNeedleDeg, renderApp, renderHistoryInstrument, xPlanOptionLabel } from "./ui";
 import { buildAcceleratingWeek, buildExampleWeek } from "./examples";
+import { buildIngestReview } from "./ingestReview";
 import { DEFAULT_SETTINGS } from "./types";
 
 describe("analog fuel needle", () => {
@@ -120,6 +121,42 @@ describe("local controls sliders", () => {
     expect(formatRequestCap(30)).toBe("30 req");
     expect(xPlanOptionLabel("premiumPlus")).toBe("Premium+ — Light 100 / Medium 30 / Heavy 10 per 2h");
     expect(xPlanOptionLabel("free")).toBe("Free — Light 20 / Medium 10 / Heavy 5 per 2h");
+  });
+});
+
+describe("import review panel", () => {
+  it("opens the Review tab with dates and before/after diffs instead of the meters", () => {
+    const after = buildExampleWeek(new Date("2026-09-16T18:00:00Z"));
+    const review = buildIngestReview({
+      before: [],
+      after,
+      added: after,
+      sourceLabel: "Dropped / chosen files",
+      names: "cursor-spending.txt",
+      bytes: 1200,
+      summary: "Filled 1 tank reading.",
+      submittedAt: "2026-09-17T00:41:00.000Z",
+    });
+    const html = renderApp({
+      readings: after,
+      settings: DEFAULT_SETTINGS,
+      paste: "",
+      capturedAtLocal: "2026-09-16T18:00",
+      activeTab: "review",
+      review,
+    });
+    expect(html).toMatch(/id="panel-review"(?!([^>]*\bhidden\b))/);
+    expect(html).toMatch(/id="panel-cursor"[^>]*\bhidden\b/);
+    expect(html).toContain("Confirm this import");
+    expect(html).toContain("Submitted");
+    expect(html).toContain("Dropped / chosen files");
+    expect(html).toContain("cursor-spending.txt");
+    expect(html).toContain("Dates used (not necessarily today)");
+    expect(html).toContain("Metrics before → after");
+    expect(html).toContain("Changed");
+    expect(html).toContain("review-to-cursor");
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain('data-tab="review"');
   });
 });
 
