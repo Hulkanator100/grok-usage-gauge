@@ -5,7 +5,7 @@ import { parseUsageEventsCsv } from "./parseUsageCsv";
 import { clearState, loadState, saveState } from "./storage";
 import type { LastImport, StoredState } from "./types";
 import { X_GROK_CAPS, type XGrokPlan } from "./types";
-import { formatRequestCap, formatUsdCap, fromDatetimeLocalValue, renderApp, toDatetimeLocalValue } from "./ui";
+import { formatRequestCap, formatUsdCap, fromDatetimeLocalValue, isAppTab, renderApp, toDatetimeLocalValue, type AppTab } from "./ui";
 
 let state: StoredState = loadState();
 let paste = "";
@@ -13,6 +13,25 @@ let capturedAtLocal = toDatetimeLocalValue();
 let notice: string | undefined;
 let error: string | undefined;
 let busy: string | undefined;
+const TAB_KEY = "grok-usage-gauge.tab";
+let activeTab: AppTab = (() => {
+  try {
+    const stored = sessionStorage.getItem(TAB_KEY);
+    if (stored && isAppTab(stored)) return stored;
+  } catch {
+    /* ignore */
+  }
+  return "cursor";
+})();
+
+function setTab(id: AppTab) {
+  activeTab = id;
+  try {
+    sessionStorage.setItem(TAB_KEY, id);
+  } catch {
+    /* ignore */
+  }
+}
 
 function persist() {
   saveState(state);
@@ -62,6 +81,7 @@ function render() {
     error,
     busy,
     lastImport: state.lastImport,
+    activeTab,
   });
   bind();
 }
@@ -140,6 +160,7 @@ async function handleFiles(list: FileList | File[]) {
       setLastImport(summarizeImport(files, result));
       notice = state.lastImport?.summary;
       error = result.error;
+      if (!result.error && (result.readings.length || result.restored)) setTab("cursor");
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
       setLastImport({
@@ -235,6 +256,14 @@ function bind() {
   bindRequestCap(xHeavyEl, "xHeavyCap");
 
   fillOriginBanner();
+  document.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.tab;
+      if (!id || !isAppTab(id)) return;
+      setTab(id);
+      render();
+    });
+  });
   fileInput?.addEventListener("change", () => onFilePicked(fileInput));
   fileInput?.addEventListener("input", () => onFilePicked(fileInput));
   document.getElementById("choose-files")?.addEventListener("click", (e) => {
@@ -271,6 +300,7 @@ function bind() {
       state.readings = [...state.readings, ...readings];
       persist();
       notice = `Saved ${readings.length} reading${readings.length === 1 ? "" : "s"} locally.`;
+      setTab("cursor");
       render();
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
@@ -290,6 +320,7 @@ function bind() {
     persist();
     notice = "Loaded a two-reading example week (all four tanks, on-pace Bot week).";
     error = undefined;
+    setTab("cursor");
     render();
   });
 
@@ -298,6 +329,7 @@ function bind() {
     persist();
     notice = "Loaded an accelerating Bot week. The Grok Bot tank should warn it will empty before weekly reset.";
     error = undefined;
+    setTab("cursor");
     render();
   });
 
@@ -356,6 +388,7 @@ async function loadBundledCsv() {
       summary: `Loaded ${readings.length} daily cumulative readings from the bundled Sep 2026 usage-events CSV.`,
     });
     notice = state.lastImport?.summary;
+    setTab("cursor");
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
   } finally {

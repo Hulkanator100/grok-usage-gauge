@@ -43,25 +43,31 @@ body {
 #app {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1.75rem 1.25rem 4.5rem;
+  padding: 1.1rem 1.25rem 3rem;
 }
 
 .masthead { position: relative; }
+.mast-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
 .horizon {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.2rem;
+  height: 1.2rem;
   border-radius: 50%;
   background: var(--surface);
   border: 1.5px solid var(--amber);
   box-shadow: 0 0 14px 2px rgba(232, 160, 23, 0.45);
-  margin-bottom: 0.85rem;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .masthead h1 {
   font-family: inherit;
-  font-size: clamp(2rem, 4vw, 2.85rem);
+  font-size: clamp(1.45rem, 3vw, 2rem);
   font-weight: 600;
-  margin: 0.15rem 0 0.7rem;
+  margin: 0.08rem 0 0;
   letter-spacing: -0.04em;
   color: var(--ink);
 }
@@ -73,6 +79,68 @@ body {
   color: var(--amber);
   margin: 0;
 }
+
+.lede-short {
+  margin: 0.55rem 0 0.45rem;
+  color: var(--dim);
+  font-size: 0.92rem;
+}
+
+.app-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.35rem 0 1rem;
+  padding: 0.45rem 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+}
+.app-tab {
+  background: transparent;
+  color: var(--dim);
+  border: 1px solid var(--hair);
+  padding: 0.4rem 0.7rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+.app-tab:hover { border-color: var(--amber); color: var(--ink); }
+.app-tab[aria-selected="true"] {
+  background: var(--amber);
+  color: #000;
+  border-color: var(--amber);
+}
+.tab-count {
+  display: inline-block;
+  margin-left: 0.35rem;
+  min-width: 1.1rem;
+  padding: 0 0.28rem;
+  border-radius: 99px;
+  background: rgba(0,0,0,0.18);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+}
+.app-tab[aria-selected="true"] .tab-count { background: rgba(0,0,0,0.22); }
+.tab-panel { margin: 0; }
+.tab-panel[hidden] { display: none !important; }
+.tab-panel .instrument { margin-top: 0; }
+
+.about-foot {
+  margin-top: 2.2rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hair);
+  color: var(--dim);
+}
+.about-foot summary {
+  cursor: pointer;
+  color: var(--amber);
+  font-weight: 650;
+  font-size: 0.88rem;
+}
+.about-foot .lede { margin-top: 0.75rem; }
 
 .lede, .bay-note, .surfaces, .out-of-v1, .token-note {
   color: var(--dim);
@@ -492,6 +560,7 @@ button.danger:hover { color: var(--ink); border-color: var(--ink); }
 
 .error { color: var(--amber-hot); }
 .notice { color: var(--amber); }
+.muted { color: var(--dim); }
 
 .drop-zone {
   border: 1px dashed var(--hair);

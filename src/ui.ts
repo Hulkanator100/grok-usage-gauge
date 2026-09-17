@@ -449,6 +449,31 @@ export function renderTankCard(tank: TankId, m: TankMetrics, points: HistoryPoin
 
 export type { LastImport } from "./types";
 
+export const APP_TABS = [
+  { id: "cursor", label: "Cursor tanks" },
+  { id: "xgrok", label: "X Grok" },
+  { id: "history", label: "History" },
+  { id: "estimate", label: "Estimate" },
+  { id: "add", label: "Add reading" },
+  { id: "log", label: "Readings" },
+] as const;
+
+export type AppTab = (typeof APP_TABS)[number]["id"];
+
+export function isAppTab(value: string): value is AppTab {
+  return APP_TABS.some((t) => t.id === value);
+}
+
+function tabButton(id: AppTab, label: string, active: AppTab, extra = ""): string {
+  const on = id === active;
+  return `<button type="button" class="app-tab" role="tab" id="tab-${id}" data-tab="${id}" aria-selected="${on}" aria-controls="panel-${id}">${label}${extra}</button>`;
+}
+
+function tabPanel(id: AppTab, active: AppTab, inner: string): string {
+  const on = id === active;
+  return `<section class="tab-panel" role="tabpanel" id="panel-${id}" data-panel="${id}" aria-labelledby="tab-${id}" ${on ? "" : "hidden"}>${inner}</section>`;
+}
+
 export function renderApp(args: {
   readings: Reading[];
   settings: AppSettings;
@@ -458,6 +483,7 @@ export function renderApp(args: {
   error?: string;
   busy?: string;
   lastImport?: LastImport;
+  activeTab?: AppTab;
 }): string {
   const now = new Date();
   const cursorCards = CURSOR_TANK_IDS.map((id) =>
@@ -481,43 +507,60 @@ export function renderApp(args: {
     })
     .join("");
 
+  const tab = args.activeTab ?? "cursor";
+  const statusBanner = args.lastImport
+    ? `<div class="ingest-banner" role="status"><strong>${escapeHtml(args.lastImport.names)}</strong> · ${escapeHtml(args.lastImport.summary)}</div>`
+    : args.readings.length
+      ? `<div class="ingest-banner" role="status">${n} stored reading${n === 1 ? "" : "s"} in this browser.</div>`
+      : `<div class="ingest-banner idle">No readings yet — use Add reading or Sample data.</div>`;
+
   return `
     <header class="masthead">
-      <div class="horizon" aria-hidden="true"></div>
-      <p class="eyebrow">Cursor tanks · X Grok windows · never one bar</p>
-      <h1>Grok Usage Gauge</h1>
-      <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a> for Cursor tanks. Paste Grok-on-X Light / Medium / Heavy request counts (often a 2-hour window) into the X tanks — those are not Cursor $. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills Cursor spend. <strong>grok.com</strong> SuperGrok Usage is rejected. Enough timestamped readings (spend+% or used/cap) roll into an <strong>unpublished estimate</strong> — implied grant $ or observed 2h request caps — and warn if a new cluster says the backend pool moved. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
-      <p id="origin-banner" class="origin-banner" role="note"></p>
-      ${
-        args.lastImport
-          ? `<div class="ingest-banner" role="status">
-        <strong>Your last import ran.</strong>
-        ${escapeHtml(args.lastImport.names)} · ${args.lastImport.bytes.toLocaleString()} bytes.
-        ${escapeHtml(args.lastImport.summary)}
-        Empty tanks below still mean that file had no % or $ for that pool (defaults were not reset except where a reading was saved).
-      </div>`
-          : args.readings.length
-            ? `<div class="ingest-banner" role="status"><strong>Stored readings are showing</strong> (${args.readings.length}). Scroll to Timestamped readings to see CSV vs screenshot. Empty tanks were not overwritten.</div>`
-            : `<div class="ingest-banner idle">No files ingested yet. Tanks that say “—” are still empty defaults.</div>`
-      }
+      <div class="mast-row">
+        <div class="horizon" aria-hidden="true"></div>
+        <div>
+          <p class="eyebrow">Cursor tanks · X Grok windows · never one bar</p>
+          <h1>Grok Usage Gauge</h1>
+        </div>
+      </div>
+      <p class="lede-short">Drop a file or paste a meter. Nothing leaves this browser.</p>
+      ${args.error ? `<p class="error" role="alert">${escapeHtml(args.error)}</p>` : ""}
+      ${args.notice ? `<p class="notice">${escapeHtml(args.notice)}</p>` : ""}
+      ${args.busy ? `<p class="notice" role="status">${escapeHtml(args.busy)}</p>` : ""}
+      ${statusBanner}
     </header>
+    <nav class="app-tabs" role="tablist" aria-label="Gauge groups">
+      ${tabButton("cursor", "Cursor tanks", tab)}
+      ${tabButton("xgrok", "X Grok", tab)}
+      ${tabButton("history", "History", tab)}
+      ${tabButton("estimate", "Estimate", tab)}
+      ${tabButton("add", "Add reading", tab)}
+      ${tabButton("log", "Readings", tab, n ? `<span class="tab-count">${n}</span>` : "")}
+    </nav>
 
-    <section class="bay">
-      <h2 class="bay-title">Cursor fuel tanks</h2>
+    ${tabPanel(
+      "cursor",
+      tab,
+      `<h2 class="bay-title">Cursor fuel tanks</h2>
       <p class="bay-note">Keep these separate. If Grok Bot launches a Cursor cloud agent, that run bills Cursor Models / Other Models / maybe on-demand as well as the Bot week — show both, do not merge. Plans do not stack: Cursor + SuperGrok + X Premium+ for Grok Bot = one Bot grant (the larger) on the Cursor account.</p>
-      <div class="tank-grid">${cursorCards}</div>
-    </section>
+      <div class="tank-grid">${cursorCards}</div>`,
+    )}
 
-    <section class="bay">
-      <h2 class="bay-title">X Grok request windows</h2>
+    ${tabPanel(
+      "xgrok",
+      tab,
+      `<h2 class="bay-title">X Grok request windows</h2>
       <p class="bay-note">Grok on x.com / the X app. Light, Medium, and Heavy are three request grants on a rolling ~2 hour clock. They are not Cursor Models, not Cursor Grok Bot week, and not grok.com SuperGrok weekly %. X developer API usage credits stay out of these tanks. Fallback caps are typical published-range numbers for the X plan you pick; a paste of 42/50 always wins.</p>
-      <div class="tank-grid three">${xCards}</div>
-    </section>
+      <div class="tank-grid three">${xCards}</div>`,
+    )}
 
-    ${renderHistoryInstrument(args.readings, args.settings)}
-    ${renderEstimateInstrument(args.readings, args.settings)}
+    ${tabPanel("history", tab, renderHistoryInstrument(args.readings, args.settings))}
+    ${tabPanel("estimate", tab, renderEstimateInstrument(args.readings, args.settings))}
 
-    <section class="console">
+    ${tabPanel(
+      "add",
+      tab,
+      `<section class="console">
       <div class="panel save-panel">
         <h2>Save a reading</h2>
         <p class="slide-hint">Files ingest as soon as you drop or choose them. Pasted text needs the Save button. Nothing leaves this browser.</p>
@@ -703,27 +746,39 @@ export function renderApp(args: {
 
         <p class="out-of-v1">Not tanks: grok.com SuperGrok week, xAI prepaid ticks, X developer <code>GET /2/usage/credits</code>, Cursor tab completions. Cursor charge order: Bot week → promo → on-demand.</p>
       </div>
-    </section>
+    </section>`,
+    )}
 
-    <section class="surfaces">
-      <h2>How each surface reports history</h2>
-      <p class="bay-note">Grok Bot chats, routines, CUA, and MCP share one weekly Cursor-account grant. They do not each export a usage file. Drop the meter screenshot, not the conversation.</p>
-      <div class="surface-grid">
-        ${SURFACE_GUIDE.map(
-          (s) => `<article class="surface-card" data-fills="${s.fillsTank}">
-            <h3>${s.title}</h3>
-            <p><span>History</span> ${s.history}</p>
-            <p><span>Drop</span> ${s.drop}</p>
-            <p><span>Tank</span> ${s.tank}</p>
-          </article>`,
-        ).join("")}
-      </div>
-    </section>
-
-    <section class="history">
+    ${tabPanel(
+      "log",
+      tab,
+      `<section class="history">
       <h2>Timestamped readings</h2>
       ${n ? `<ol>${history}</ol>` : `<p>None yet. Load an example week or paste from Spending.</p>`}
-    </section>
+    </section>`,
+    )}
+
+    <footer class="about-foot">
+      <details>
+        <summary>How this gauge works</summary>
+        <p class="lede">Drop screenshots or files from the surfaces below. Prefer <strong>Grok Bot Settings → Usage</strong> and <a href="https://cursor.com/dashboard/spending" target="_blank" rel="noreferrer">cursor.com/dashboard/spending</a> for Cursor tanks. Paste Grok-on-X Light / Medium / Heavy request counts (often a 2-hour window) into the X tanks — those are not Cursor $. A finished <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noreferrer">usage-events CSV</a> fills Cursor spend. <strong>grok.com</strong> SuperGrok Usage is rejected. Enough timestamped readings (spend+% or used/cap) roll into an <strong>unpublished estimate</strong> — implied grant $ or observed 2h request caps — and warn if a new cluster says the backend pool moved. Readings stay in this browser. No API keys, Bearer tokens, or <code>state.vscdb</code>.</p>
+        <p id="origin-banner" class="origin-banner" role="note"></p>
+        <section class="surfaces">
+          <h2>How each surface reports history</h2>
+          <p class="bay-note">Grok Bot chats, routines, CUA, and MCP share one weekly Cursor-account grant. They do not each export a usage file. Drop the meter screenshot, not the conversation.</p>
+          <div class="surface-grid">
+            ${SURFACE_GUIDE.map(
+              (s) => `<article class="surface-card" data-fills="${s.fillsTank}">
+                <h3>${s.title}</h3>
+                <p><span>History</span> ${s.history}</p>
+                <p><span>Drop</span> ${s.drop}</p>
+                <p><span>Tank</span> ${s.tank}</p>
+              </article>`,
+            ).join("")}
+          </div>
+        </section>
+      </details>
+    </footer>
   `;
 }
 

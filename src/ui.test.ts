@@ -71,6 +71,11 @@ describe("local controls sliders", () => {
       paste: "",
       capturedAtLocal: "2026-09-16T18:00",
     });
+    expect(html).toContain("app-tabs");
+    expect(html).toContain("about-foot");
+    expect(html).toContain("How this gauge works");
+    expect(html).toContain("lede-short");
+    expect(html).toMatch(/id="panel-add"[^>]*hidden/);
     expect(html).toContain("sample-io");
     expect(html).toContain("save-panel");
     expect(html).toContain("Choose files");
